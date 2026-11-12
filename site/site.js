@@ -18,7 +18,7 @@
         try { previous = localStorage.getItem('movim-last-release'); localStorage.setItem('movim-last-release', tag); } catch (_) {}
         releaseStatus.textContent = `${previous && previous !== tag ? 'نسخهٔ جدید منتشر شده است: ' : 'آخرین نسخه: '}${tag}${available ? '' : ' · بسته‌ای برای دریافت موجود نیست.'}`;
       })
-      .catch(() => { releaseStatus.textContent = 'نسخهٔ منتشرشده قابل دریافت نیست یا اتصال برقرار نشد. صفحهٔ انتشارها را بررسی کن.'; });
+      .catch(() => { releaseStatus.textContent = 'بررسی خودکار نسخه ممکن نشد؛ لینک‌های دریافت آخرین نسخه همچنان در دسترس‌اند.'; });
   }
 
   const search = document.getElementById('doc-search');
