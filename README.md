@@ -1,79 +1,33 @@
-# movim — a Neovim-based IDE in your terminal
+﻿# movim — a Neovim workspace for your terminal
 
-یک کانفیگ کامل Neovim با تمام امکاناتی که از WebStorm انتظار دارید — و بیشتر.
+movim brings project navigation, language tools, Git, terminals, tasks, themes, and bookmarks together in a customizable Neovim configuration.
 
-**📚 آموزش کامل فارسی: [docs/README.md](docs/README.md)**
+[Website and downloads](https://moeinparvizi.github.io/movim/) · [English guide](https://moeinparvizi.github.io/movim/docs-en/README.html) · [Persian documentation](docs/README.md) · [Releases](https://github.com/moeinparvizi/movim/releases)
 
-## ویژگی‌های کلیدی
+## Install
 
-- 🧠 **هوشمندی کد کامل**: vtsls + angularls — اتوکامپلیت، hover، refactor، inlay hints
-- 🔀 **پول هوشمند** (`<leader>gp`): انتخاب شاخهٔ ریموت و merge با autostash؛ تعارض → باز شدن Diffview با انتخاب ours/theirs/both (`co/ct/cb`)
-- ✏️ **Rename هوشمند** (`S-F6`) حتی داخل template های انگولار
-- 🖱️ **Alt+Click** → تعریف | **Ctrl+Click** → مولتی‌کرسر
-- 🕰️ **Local History** (`<leader>hl`): اسنپ‌شات خودکار هر ذخیره + بازگردانی — عین وب‌استورم
-- 🌳 **Undo Tree** ماندگار بعد از بستن (`<leader>hu`)
-- 🔍 Telescope + Spectre: جستجو و جایگزینی در کل پروژه
-- 🚀 پنل تسک‌ها (`<leader>rt`)، رانر npm (`<leader>rd`)، دیباگر DAP، ترمینال شناور (`Ctrl+/`)
-- 🌗 ۸+ تم با ذخیره‌سازی دائمی انتخاب (`<leader>ut`) — پیش‌فرض: TokyoNight
-- 🇮🇷 **تایپ فارسی استاندارد ISIRI** با F9 + نیم‌فاصله با Alt+Space
-- ⚡ Flash jump (`s`)، فولدینگ ufo، Structure panel (`<leader>o`)، TODO/بوکمارک، Compare with clipboard (`<leader>Dc`)، lazygit (`<leader>gg`)
+Download a package from the website or GitHub Releases:
 
-## نصب
+- **Windows x64:** run `movim-Setup.exe`, then open a new PowerShell and run `nvim`. Git for Windows is needed for Git features.
+- **macOS, Apple Silicon or Intel:** extract `movim-macOS.zip`, run `Install.command`, and start `movim` in a new terminal. The installer uses Homebrew and needs internet access.
+- **Linux x86_64 or ARM64:** install Neovim 0.11+, Git, Node.js/npm, ripgrep and curl, then extract `movim-linux.tar.gz` and run `bash Install.sh`. Start `~/.local/bin/movim`.
 
-برای دریافت بسته و نصب روی ویندوز، مک Intel یا Apple Silicon و لینوکس، [راهنمای نصب پلتفرم‌ها](docs/19-platform-install.md) را ببینید. پس از نصب، [راهنمای به‌روزرسانی](docs/18-updates.md) روش دریافت نسخه‌های جدید را توضیح می‌دهد.
+The macOS and Linux packages have not been tested on native macOS or Linux machines. See the [English guide](https://moeinparvizi.github.io/movim/docs-en/README.html) for prerequisites, backups, and usage.
 
-## پشته فناوری
+## Features
 
-| بخش | ابزار |
-|---|---|
-| Manager | lazy.nvim |
-| Completion | blink.cmp + friendly-snippets |
-| LSP | nvim-lspconfig + mason (vtsls, angularls, tailwindcss, html, cssls, emmet, jsonls, yamlls, pyright, lua_ls, bashls, docker) |
-| Highlight | Treesitter (20 پارسر) |
-| Files/Grep | neo-tree + Telescope + ripgrep |
-| Motion | flash.nvim |
-| Git | gitsigns + diffview + git-conflict + lazygit |
-| Format/Lint | conform (prettierd) + nvim-lint (eslint_d) |
-| Debug | nvim-dap + dap-ui (js-debug-adapter) |
-| UI | tokyonight + bufferline + lualine + ufo + aerial + dropbar + trouble + notify + dashboard |
-| Editing | Comment + mini.pairs/surround/align + ts-autotag + multiple-cursors |
+- File explorer, scoped file and text search, and project-wide replacement.
+- Language servers for completion, diagnostics, definition, and rename; support depends on the installed server and project setup.
+- Project tasks, multiple terminal sessions, debugger integration, and Git tools with conflict resolution.
+- Themes, bookmarks, persistent undo, local history, Flash navigation, and multiple cursors.
+- Persian keyboard input and a right-to-left window option. Rendering and mixed-direction text depend on Neovim, the terminal, and the font.
 
-## کلیدهای طلایی (cheat-sheet کامل: [docs/14-keymaps-cheatsheet.md](docs/14-keymaps-cheatsheet.md))
+Press **Space** to open the shortcut menu. Common shortcuts include `<leader>ff` for files, `<leader>fg` for text search, `<leader>rt` for tasks, `<leader>ut` for themes, and `<leader>gp` for Git pull. See the [full keymap reference](docs/14-keymaps-cheatsheet.md) (Persian).
 
-```
-<leader>gp   پول هوشمند (autostash, کانفلیکت → Diffview)     Ctrl+T
-<leader>gg   lazygit                                          Git window
-<leader>gc   کامیت                                            Ctrl+K
-S-F6 / F2    rename هوشمند                                    Shift+F6
-gd / Alt+Click  تعریف                                         Ctrl+B / Ctrl+Click
-Ctrl+Click   مولتی‌کرسر                                       Alt+Click
-K            مستندات hover                                    Ctrl+Q
-<leader>ca   quick fix                                        Alt+Enter
-<leader>hl   Local History                                    Local History
-<leader>hu   Undo tree                                        Ctrl+Shift+Z tree
-<leader>ff / fg   فایل / متن                                 Double Shift
-<leader>o    Structure panel                                  Structure
-<leader>ut   انتخاب تم (persist)                              Theme
-<leader>Dc   مقایسه فایل با کلیپ‌بورد                          Compare with Clipboard
-F9 (insert)  تایپ فارسی ISIRI                                 —
-<leader>rd   dev server                                       Run
-F5/F10/F11   دیباگ                                            Debug
-Ctrl+/       ترمینال شناور                                    Terminal
-```
+## Updates
 
-`<leader>` = Space — هر کلیدی را نگه دارید، which-key منو باز می‌کند؛ چیزی برای حفظ کردن نیست.
+movim checks GitHub Releases for a newer stable version in the background at most once per day. Run `:MovimCheckUpdate` to check manually. Updates are announced, not installed automatically.
 
-## مجوز
+## License
 
-MIT — [LICENSE](LICENSE)
-
-
-## Windows: installed isolated workspace
-
-Run [start-webstorm.cmd](start-webstorm.cmd) from PowerShell, cmd, or Explorer, optionally passing a project directory: `.\start-webstorm.cmd C:\path\to\project`. It uses portable Neovim and Node from the sibling `../.tools` directory, and keeps plugin data, Mason packages and state in `../.isolated`. Git is used from its standard Windows install or PATH; ripgrep is needed for project search. The launcher only changes environment variables in its own process and does not replace your existing configuration. To revert, close the launched editor and use your normal Neovim; the two workspace directories can be removed separately if no longer wanted. If moving this repository without the sibling directories, install Neovim 0.11+, Node/npm, Git, ripgrep, a C compiler, and optionally lazygit, pnpm, yarn and bun and follow the general installation guide.
-
-Lazy.nvim uses [lazy-lock.json](lazy-lock.json) to pin plugins. Mason may install language servers and formatters on first use; restart Neovim after installation. Explicit `:TSInstall javascript typescript tsx html css scss json yaml markdown markdown_inline vue svelte` installs parsers when a compiler is available; these parsers were installed in this workspace. Project-local Prettier and ESLint configuration takes priority. Space uf toggles format-on-save; Space so explicitly requests organize imports.
-
-See [WebStorm feature comparison](docs/webstorm-parity.md), [keymaps](docs/keymaps.md), and [run/debug/test guide](docs/run-debug-test.md). No project script or test runs on opening a project.
-
-Validation in this workspace: Neovim 0.12.6 with Node 22.23.5 started headlessly; a TypeScript fixture attached vtsls and received a type error, Vue and Svelte servers attached, Prettier reformatted a fixture, ESLint reported a project-configured diagnostic, Vitest nearest and suite runs and a Jest file run passed, and Node DAP stopped at a breakpoint. These are headless checks: terminal key delivery, UI and Chrome debugging still need interactive verification. Run `:checkhealth`, `:LspInfo` and `:ConformInfo` for local diagnostics.
+[MIT](LICENSE)
