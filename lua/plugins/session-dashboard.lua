@@ -15,18 +15,20 @@ return {
     event = "VimEnter",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
-      theme = "hyper",
+      theme = "doom",
+      hide = { tabline = false },
       config = {
+        vertical_center = true,
         header = {
-          "███╗   ██╗ ██████╗ ███████╗██╗██╗   ██╗███████╗",
-          "████╗  ██║██╔═══██╗██╔════╝██║██║   ██║██╔════╝",
-          "██╔██╗ ██║██║   ██║█████╗  ██║██║   ██║█████╗  ",
-          "██║╚██╗██║██║   ██║██╔══╝  ██║╚██╗ ██╔╝██╔══╝  ",
-          "██║ ╚████║╚██████╔╝██║     ██║ ╚████╔╝ ███████╗",
-          "╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝  ╚═══╝  ╚══════╝",
-          "              [ Moein's IDE · Neovim ]",
+          [[  __  __  _____ __      __ ___ __  __ ]],
+          [[ |  \/  |/ _ \ \/ /\ / /|_ _|  \/  |]],
+          [[ | |\/| | | | \  /\ V /  | || |\/| |]],
+          [[ |_|  |_|\___/ \/  \_/  |___|_|  |_|]],
+          "",
+          "movim",
+          "",
         },
-        shortcut = {
+        center = {
           { desc = " Find file", group = "Label", action = "Telescope find_files", key = "f" },
           { desc = " Recent", group = "Label", action = "Telescope oldfiles", key = "r" },
           { desc = " Git (lazygit)", group = "Label", action = "lua require('utils.term').lazygit()", key = "g" },
@@ -36,6 +38,19 @@ return {
         footer = { "docs/ ← آموزش فارسی" },
       },
     },
+    config = function(_, opts)
+      -- Dashboard's default uses the whole terminal width even in a split.
+      require("dashboard.utils").center_align = function(lines)
+        local width = vim.api.nvim_win_get_width(0)
+        local result = {}
+        for _, line in ipairs(lines) do
+          local padding = math.max(0, math.floor((width - vim.fn.strdisplaywidth(line)) / 2))
+          result[#result + 1] = (" "):rep(padding) .. line
+        end
+        return result
+      end
+      require("dashboard").setup(opts)
+    end,
   },
   {
     "rcarriga/nvim-notify",

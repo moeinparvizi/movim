@@ -102,6 +102,7 @@
 | کلید | کار |
 |---|---|
 | `<leader>rr` | انتخاب اسکریپت npm |
+| `<leader>rt` | باز کردن پنل تسک‌های پروژه (`tasks.json` و اسکریپت‌های npm) |
 | `<leader>rd` | dev server |
 | `<leader>rf` / `rs` | اجرای فایل / توقف |
 | `<leader>db` / `dB` | breakpoint / شرطی |

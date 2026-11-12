@@ -1,4 +1,4 @@
--- marks.nvim — bookmarks (mm toggle like WebStorm F11, m; view all)
+-- marks.nvim — Vim letter marks and optional numbered bookmark groups.
 return {
   "chentoast/marks.nvim",
   event = { "BufReadPost", "BufNewFile" },

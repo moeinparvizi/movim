@@ -7,7 +7,8 @@ local M = {}
 local runner_term = nil
 
 local function project_root()
-  local cwd = vim.fn.getcwd()
+  local file = vim.api.nvim_buf_get_name(0)
+  local cwd = file ~= "" and vim.fn.fnamemodify(file, ":p:h") or vim.fn.getcwd()
   local dir = cwd
   for _ = 1, 20 do
     if vim.fn.filereadable(dir .. "/package.json") == 1 then
@@ -63,8 +64,15 @@ local function run_npm_script(name)
   if not root then
     return vim.notify("No package.json found in this project", vim.log.levels.WARN, { title = "Runner" })
   end
-  vim.notify("npm run " .. name, nil, { title = "Runner ▶" })
-  run_in_term(("npm run %s"):format(vim.fn.shellescape(name)), root)
+  local manager = "npm"
+  for _, entry in ipairs({ { "pnpm-lock.yaml", "pnpm" }, { "yarn.lock", "yarn" }, { "bun.lockb", "bun" }, { "bun.lock", "bun" }, { "package-lock.json", "npm" } }) do
+    if vim.fn.filereadable(root .. "/" .. entry[1]) == 1 then manager = entry[2]; break end
+  end
+  if vim.fn.executable(manager) == 0 then
+    return vim.notify(manager .. " is not installed or not in PATH", vim.log.levels.ERROR)
+  end
+  vim.notify(manager .. " run " .. name, nil, { title = "Runner" })
+  run_in_term(("%s run %s"):format(manager, vim.fn.shellescape(name)), root)
 end
 
 function M.pick_script()

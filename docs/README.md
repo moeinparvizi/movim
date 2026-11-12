@@ -24,12 +24,15 @@
 | ۱۴ | [چیت‌شیت کلیدها](14-keymaps-cheatsheet.md) | جدول کامل تمام کلیدها (قابل پرینت!) |
 | ۱۵ | [کاستومایز و توسعه](15-extend.md) | افزودن پلاگین، تم، زبان و مپینگ جدید |
 | ۱۶ | [عیب‌یابی](16-troubleshooting.md) | مشکلات رایج و راه‌حل‌ها |
+| ۱۷ | [پنل تسک‌های پروژه](17-tasks.md) | اجرای تسک‌های VS Code، اسکریپت‌های npm و دستور دلخواه |
+| ۱۸ | [به‌روزرسانی movim](18-updates.md) | بررسی نسخهٔ پایدار و دریافت نسخهٔ جدید |
+| ۱۹ | [نصب روی سیستم‌های مختلف](19-platform-install.md) | بسته‌های ویندوز، مک و لینوکس و پیش‌نیازها |
 
 ## جدول تطبیق WebStorm ↔ این کانفیگ
 
 | امکانات WebStorm | معادل اینجا |
 |---|---|
-| Ctrl+T (Update Project) | `<leader>gp` پول هوشمند با autostash |
+| Ctrl+T (Update Project) | `<leader>gp` انتخاب شاخهٔ ریموت و مرج با autostash |
 | Merge Dialog کانفلیکت | Diffview + `co/ct/cb` انتخاب طرف |
 | Shift+F6 (Rename) | `<S-F6>` یا `<F2>` یا `<leader>cr` |
 | Ctrl+Alt+Click | Alt+Click (رفتن به تعریف) |
@@ -40,7 +43,7 @@
 | Ctrl+Shift+F (Replace in Path) | `<leader>sr` (Spectre) |
 | Structure Panel | `<leader>o` (Aerial) |
 | TODO Panel | `<leader>xt` |
-| Favorites / Bookmarks | `mm` / `m;` |
+| Bookmarks | `Space k t` / `Space k l` |
 | Compare with Clipboard | `<leader>Dc` / `<leader>Ds` |
 | Shelve/Unshelve | `<leader>gS` / `<leader>gs` |
 | Run Configurations | `<leader>rr` / `<leader>rd` |

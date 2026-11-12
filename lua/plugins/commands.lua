@@ -7,14 +7,15 @@ return {
     -------------------------------------------------------------
     -- Git (WebStorm: Ctrl+T update, Ctrl+K commit, push, shelve)
     -------------------------------------------------------------
-    vim.keymap.set("n", "<leader>gp", function() require("utils.git").smart_pull() end, { desc = "Smart pull (autostash)" })
+    vim.keymap.set("n", "<leader>gp", function() require("utils.git").smart_pull() end, { desc = "Pull selected remote branch" })
+    vim.keymap.set("n", "<leader>cm", function() require("utils.git").choose_conflict() end, { desc = "Choose conflict side" })
     vim.keymap.set("n", "<leader>gP", function() require("utils.git").push() end, { desc = "Push" })
     vim.keymap.set("n", "<leader>gc", function() require("utils.git").commit(false) end, { desc = "Commit staged…" })
     vim.keymap.set("n", "<leader>gC", function() require("utils.git").commit(true) end, { desc = "Stage all + commit…" })
     vim.keymap.set("n", "<leader>gS", function() require("utils.git").stash_push() end, { desc = "Stash (shelve)" })
     vim.keymap.set("n", "<leader>gs", function() require("utils.git").stash_pop() end, { desc = "Stash pop (unshelve)" })
-    vim.api.nvim_create_user_command("Gcontinue", function() require("utils.git").rebase_continue() end, { desc = "Continue rebase after conflict resolution" })
-    vim.api.nvim_create_user_command("Gabort", function() require("utils.git").rebase_abort() end, { desc = "Abort a conflicted rebase" })
+    vim.api.nvim_create_user_command("Gcontinue", function() require("utils.git").rebase_continue() end, { desc = "Continue merge or rebase after conflict resolution" })
+    vim.api.nvim_create_user_command("Gabort", function() require("utils.git").rebase_abort() end, { desc = "Abort a conflicted merge or rebase" })
     vim.api.nvim_create_user_command("Gpull", function() require("utils.git").smart_pull() end, { desc = "Smart pull" })
     vim.api.nvim_create_user_command("Gpush", function() require("utils.git").push() end, { desc = "Push" })
 
@@ -27,6 +28,8 @@ return {
     -------------------------------------------------------------
     -- Project runner
     -------------------------------------------------------------
+    vim.keymap.set("n", "<leader>rt", function() require("utils.tasks").toggle() end, { desc = "Tasks panel" })
+    vim.api.nvim_create_user_command("Tasks", function() require("utils.tasks").toggle() end, { desc = "Open project tasks" })
     vim.keymap.set("n", "<leader>rr", function() require("utils.runner").pick_script() end, { desc = "Run npm script…" })
     vim.keymap.set("n", "<leader>rd", function() require("utils.runner").run_dev() end, { desc = "Run dev server" })
     vim.keymap.set("n", "<leader>rf", function() require("utils.runner").run_file() end, { desc = "Run current file" })

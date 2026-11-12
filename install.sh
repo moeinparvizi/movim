@@ -29,7 +29,7 @@ if [ -d "$HOME/.config/nvim/.git" ]; then
   git -C "$HOME/.config/nvim" pull --rebase
 else
   info "کلون کردن کانفیگ…"
-  git clone https://github.com/moeinparvizi/neovim.git "$HOME/.config/nvim"
+  git clone https://github.com/moeinparvizi/movim.git "$HOME/.config/nvim"
 fi
 
 info "پاک کردن پلاگین‌های قدیمی (lazy و mason)…"

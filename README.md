@@ -1,4 +1,4 @@
-# Moein's Neovim — WebStorm-class IDE in your terminal
+# movim — a Neovim-based IDE in your terminal
 
 یک کانفیگ کامل Neovim با تمام امکاناتی که از WebStorm انتظار دارید — و بیشتر.
 
@@ -13,7 +13,7 @@
 - 🕰️ **Local History** (`<leader>hl`): اسنپ‌شات خودکار هر ذخیره + بازگردانی — عین وب‌استورم
 - 🌳 **Undo Tree** ماندگار بعد از بستن (`<leader>hu`)
 - 🔍 Telescope + Spectre: جستجو و جایگزینی در کل پروژه
-- 🚀 رانر npm (`<leader>rd`)، دیباگر DAP، ترمینال شناور (`Ctrl+/`)
+- 🚀 پنل تسک‌ها (`<leader>rt`)، رانر npm (`<leader>rd`)، دیباگر DAP، ترمینال شناور (`Ctrl+/`)
 - 🌗 ۸+ تم با ذخیره‌سازی دائمی انتخاب (`<leader>ut`) — پیش‌فرض: TokyoNight
 - 🇮🇷 **تایپ فارسی استاندارد ISIRI** با F9 + نیم‌فاصله با Alt+Space
 - ⚡ Flash jump (`s`)، فولدینگ ufo، Structure panel (`<leader>o`)، TODO/بوکمارک، Compare with clipboard (`<leader>Dc`)، lazygit (`<leader>gg`)
@@ -27,7 +27,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 
 # کانفیگ
 mv ~/.config/nvim ~/.config/nvim.bak   # اگر قبلی دارید
-git clone https://github.com/moeinparvizi/neovim.git ~/.config/nvim
+git clone https://github.com/moeinparvizi/movim.git ~/.config/nvim
 nvim   # اولین اجرا: پلاگین‌ها + LSP خودکار نصب می‌شوند
 ```
 
@@ -77,3 +77,14 @@ Ctrl+/       ترمینال شناور                                    Termin
 ## مجوز
 
 MIT — [LICENSE](LICENSE)
+
+
+## Windows: installed isolated workspace
+
+Run [start-webstorm.cmd](start-webstorm.cmd) from PowerShell, cmd, or Explorer, optionally passing a project directory: `.\start-webstorm.cmd C:\path\to\project`. It uses portable Neovim and Node from the sibling `../.tools` directory, and keeps plugin data, Mason packages and state in `../.isolated`. Git is used from its standard Windows install or PATH; ripgrep is needed for project search. The launcher only changes environment variables in its own process and does not replace your existing configuration. To revert, close the launched editor and use your normal Neovim; the two workspace directories can be removed separately if no longer wanted. If moving this repository without the sibling directories, install Neovim 0.11+, Node/npm, Git, ripgrep, a C compiler, and optionally lazygit, pnpm, yarn and bun and follow the general installation guide.
+
+Lazy.nvim uses [lazy-lock.json](lazy-lock.json) to pin plugins. Mason may install language servers and formatters on first use; restart Neovim after installation. Explicit `:TSInstall javascript typescript tsx html css scss json yaml markdown markdown_inline vue svelte` installs parsers when a compiler is available; these parsers were installed in this workspace. Project-local Prettier and ESLint configuration takes priority. Space uf toggles format-on-save; Space so explicitly requests organize imports.
+
+See [WebStorm feature comparison](docs/webstorm-parity.md), [keymaps](docs/keymaps.md), and [run/debug/test guide](docs/run-debug-test.md). No project script or test runs on opening a project.
+
+Validation in this workspace: Neovim 0.12.6 with Node 22.23.5 started headlessly; a TypeScript fixture attached vtsls and received a type error, Vue and Svelte servers attached, Prettier reformatted a fixture, ESLint reported a project-configured diagnostic, Vitest nearest and suite runs and a Jest file run passed, and Node DAP stopped at a breakpoint. These are headless checks: terminal key delivery, UI and Chrome debugging still need interactive verification. Run `:checkhealth`, `:LspInfo` and `:ConformInfo` for local diagnostics.

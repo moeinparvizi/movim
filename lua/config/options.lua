@@ -12,6 +12,7 @@ opt.cursorline = true
 opt.signcolumn = "yes"
 opt.termguicolors = true
 opt.showmode = false -- lualine/bufferline already show it
+opt.showtabline = 2 -- Keep the buffer tabs visible, including for a single file.
 opt.pumheight = 14
 opt.laststatus = 3 -- one global statusline
 opt.cmdheight = 1
@@ -29,7 +30,7 @@ opt.softtabstop = 2
 opt.smartindent = true
 opt.autoindent = true
 opt.updatetime = 250
-opt.timeoutlen = 400
+opt.timeoutlen = 3000
 opt.ignorecase = true
 opt.smartcase = true
 opt.inccommand = "split" -- live :s preview
@@ -41,7 +42,9 @@ opt.clipboard = "unnamedplus" -- system clipboard like WebStorm
 
 -- Persistent undo (per-file undo history across restarts)
 opt.undofile = true
-opt.undodir:append(vim.fn.stdpath("state") .. "/undo")
+local undo_dir = vim.fs.joinpath(vim.fn.stdpath("state"), "undo"):gsub("\\", "/")
+vim.fn.mkdir(undo_dir, "p")
+opt.undodir = { undo_dir }
 
 -- Sessions / swap
 opt.swapfile = false
@@ -53,10 +56,13 @@ opt.foldlevel = 99
 opt.foldlevelstart = 99
 opt.foldenable = true
 
--- Persian / RTL-friendly text handling
--- (nvim joins Arabic-script letters itself; terminals like kitty/iTerm2/WezTerm
---  render them correctly. Paragraph direction stays LTR — see docs/13-persian.md)
-vim.cmd([[ set delcombine ]])
+-- The editor shapes Arabic-script text; the terminal still provides glyphs.
+opt.arabicshape = true
+opt.delcombine = true
+-- Load the bundled Persian layout while leaving English input as the default.
+opt.keymap = "persian"
+opt.iminsert = 0
+opt.imsearch = -1
 
 -- Search
 opt.hlsearch = true

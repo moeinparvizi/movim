@@ -8,18 +8,23 @@ end
 -----------------------------------------------------------
 map("<F9>", "<C-^>", "Toggle Persian/English typing (insert)", { "i", "c" })
 map("<M-Space>", "‌", "Insert نیم‌فاصله (ZWNJ)", "i")
+map("<leader>ur", function()
+  vim.wo.rightleft = not vim.wo.rightleft
+  vim.notify("Text direction: " .. (vim.wo.rightleft and "right to left" or "left to right"))
+end, "Toggle right-to-left display")
 
 -----------------------------------------------------------
 -- Better defaults
 -----------------------------------------------------------
 map("<Esc>", "<cmd>nohlsearch<CR>", "Clear search highlight")
-map("n", "j", "gj")
-map("n", "k", "gk")
-map("n", "<C-d>", "<C-d>zz")
-map("n", "<C-u>", "<C-u>zz")
-map("n", "n", "nzzzv")
-map("n", "N", "Nzzzv")
-map("n", "Q", "<nop>")
+map("j", "gj", "Move down by display line")
+map("k", "gk", "Move up by display line")
+map("<C-d>", "<C-d>zz", "Half page down")
+map("<C-u>", "<C-u>zz", "Half page up")
+map("n", "nzzzv", "Next search result")
+map("N", "Nzzzv", "Previous search result")
+map("/", function() require("utils.find_panel").open() end, "Find and replace in current file")
+map("Q", "<nop>", "Disable Ex mode")
 -- Move selected lines up/down (like WebStorm Shift+Cmd+Up/Down)
 map("J", ":m '>+1<CR>gv=gv", "Move selection down", "v")
 map("K", ":m '<-2<CR>gv=gv", "Move selection up", "v")
@@ -69,16 +74,46 @@ for i = 1, 9 do
 end
 
 -----------------------------------------------------------
--- Alt+Click → go to definition (like WebStorm Cmd+Click)
+-- Alt+Click → open the definition in a new tab
 -- Ctrl+Click → add another cursor (multiple-cursors.nvim)
 -----------------------------------------------------------
 vim.keymap.set("n", "<M-LeftMouse>", function()
   local pos = vim.fn.getmousepos()
   if pos and pos.winid == vim.api.nvim_get_current_win() then
     vim.api.nvim_win_set_cursor(0, { pos.line, math.max(pos.column - 1, 0) })
-    vim.lsp.buf.definition()
+    local source_win = vim.api.nvim_get_current_win()
+    vim.lsp.buf.definition({
+      on_list = function(result)
+        local function open_definition(item)
+          if not item or not vim.api.nvim_win_is_valid(source_win) then return end
+          local bufnr = item.bufnr
+          if not bufnr or bufnr == 0 then
+            if not item.filename or item.filename == "" then return end
+            bufnr = vim.fn.bufadd(item.filename)
+          end
+          vim.api.nvim_set_current_win(source_win)
+          vim.cmd("normal! m'")
+          vim.cmd("tab split")
+          vim.bo[bufnr].buflisted = true
+          vim.api.nvim_win_set_buf(0, bufnr)
+          vim.api.nvim_win_set_cursor(0, { item.lnum, math.max((item.col or 1) - 1, 0) })
+          vim.cmd("normal! zv")
+        end
+        if #result.items == 1 then
+          open_definition(result.items[1])
+        else
+          vim.ui.select(result.items, {
+            prompt = "Choose a definition",
+            format_item = function(item)
+              local name = item.filename or vim.api.nvim_buf_get_name(item.bufnr)
+              return (name ~= "" and name or "[No Name]") .. ":" .. item.lnum
+            end,
+          }, open_definition)
+        end
+      end,
+    })
   end
-end, { desc = "Alt+Click: go to definition" })
+end, { desc = "Alt+Click: open definition in a new tab" })
 
 vim.keymap.set("n", "<M-LeftRelease>", "<LeftRelease>", { desc = "Alt release" })
 
@@ -103,3 +138,57 @@ end, "Toggle relative numbers")
 map("<leader>uL", function()
   vim.opt.number = not vim.opt.number:get()
 end, "Toggle line numbers")
+
+-- WebStorm Windows/Linux profile. Terminal support for modified keys varies.
+-- Set vim.g.webstorm_keymaps = false before loading this module to opt out.
+if vim.g.webstorm_keymaps ~= false then
+  local actions = {
+    { "<C-b>", function() vim.lsp.buf.definition() end, "Go to declaration" },
+    { "<C-M-b>", function() vim.lsp.buf.implementation() end, "Go to implementation" },
+    { "<C-S-b>", function() vim.lsp.buf.type_definition() end, "Go to type definition" },
+    { "<M-F7>", function() vim.lsp.buf.references() end, "Find usages" },
+    { "<C-F12>", "<cmd>Telescope lsp_document_symbols<CR>", "File structure" },
+    { "<F8>", function() require("dap").step_over() end, "Debug step over" },
+    { "<F7>", function() require("dap").step_into() end, "Debug step into" },
+    { "<C-F8>", function() require("dap").toggle_breakpoint() end, "Toggle breakpoint" },
+    { "<S-F8>", function() require("dap").step_out() end, "Debug step out" },
+    { "<C-S-n>", "<cmd>Telescope find_files<CR>", "Find file" },
+    { "<C-p>", function() vim.lsp.buf.signature_help() end, "Parameter information" },
+    { "<C-q>", function() vim.lsp.buf.hover() end, "Quick documentation" },
+    { "<C-e>", "<cmd>Telescope oldfiles<CR>", "Recent files" },
+    { "<C-S-f>", "<cmd>Telescope live_grep<CR>", "Find in project" },
+    { "<C-S-a>", "<cmd>Telescope commands<CR>", "Find action" },
+    { "<S-F2>", function() vim.diagnostic.jump({ count = -1, float = true }) end, "Previous diagnostic" },
+    { "<M-CR>", function() vim.lsp.buf.code_action() end, "Code actions" },
+  }
+  map("<F9>", function() require("dap").continue() end, "Debug resume")
+  for _, a in ipairs(actions) do
+    vim.keymap.set("n", a[1], a[2], { desc = a[3], silent = true })
+    vim.keymap.set("i", a[1], function()
+      vim.cmd.stopinsert()
+      vim.schedule(function()
+        if type(a[2]) == "function" then a[2]() else vim.cmd(a[2]:gsub("<cmd>", ""):gsub("<CR>", "")) end
+      end)
+    end, { desc = a[3], silent = true })
+  end
+end
+
+-- Some terminals report Shift+F6 as F18. F2 and Space c r are accessible
+-- alternatives when the terminal or operating system intercepts Shift+F6.
+local rename_symbol = function() require("utils.rename").symbol() end
+for _, key in ipairs({ "<S-F6>", "<F18>", "<F2>" }) do
+  vim.keymap.set("n", key, rename_symbol, { desc = "Rename symbol", silent = true })
+  vim.keymap.set("i", key, function()
+    vim.cmd.stopinsert()
+    vim.schedule(rename_symbol)
+  end, { desc = "Rename symbol", silent = true })
+end
+map("<leader>cr", rename_symbol, "Rename symbol")
+vim.api.nvim_create_user_command("RenameSymbol", rename_symbol, { desc = "Rename symbol using the language server" })
+map("<leader>uf", function()
+  vim.g.disable_autoformat = not vim.g.disable_autoformat
+  vim.notify("Format on save: " .. (vim.g.disable_autoformat and "off" or "on"))
+end, "Toggle format on save")
+map("<leader>so", function()
+  vim.lsp.buf.code_action({ context = { only = { "source.organizeImports" } }, apply = true })
+end, "Organize imports")

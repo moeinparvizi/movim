@@ -59,7 +59,7 @@
 
 ```bash
 mv ~/.config/nvim ~/.config/nvim.broken
-git clone https://github.com/moeinparvizi/neovim.git ~/.config/nvim
+git clone https://github.com/moeinparvizi/movim.git ~/.config/nvim
 rm -rf ~/.local/share/nvim ~/.local/state/nvim   # پاک کردن پلاگین‌ها (اختیاری، سنگین است)
 nvim
 ```

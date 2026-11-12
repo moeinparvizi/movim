@@ -6,6 +6,7 @@ return {
   opts = {
     options = {
       theme = "auto",
+      icons_enabled = true,
       globalstatus = true,
       component_separators = { left = "", right = "" },
       section_separators = { left = "", right = "" },
@@ -17,7 +18,7 @@ return {
         {
           "filename",
           path = 1,
-          symbols = { modified = "●", readonly = "󰌾", unnamed = "[بدون نام]" },
+          symbols = { modified = "●", readonly = "[RO]", unnamed = "[بدون نام]" },
         },
       },
       lualine_x = {
@@ -31,7 +32,8 @@ return {
           color = { fg = "#ff9e64", gui = "bold" },
           separator = "",
         },
-        { "diagnostics" },
+        { "diagnostics", symbols = { error = "E:", warn = "W:", info = "I:", hint = "H:" } },
+        { function() local names = {}; for _, c in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do names[#names+1] = c.name end; return #names > 0 and ("LSP:" .. table.concat(names, ",")) or "" end },
         { "filetype" },
       },
       lualine_y = { "progress" },

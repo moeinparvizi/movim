@@ -1,6 +1,10 @@
 -- lazy.nvim bootstrap — plugin manager
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
+  if vim.fn.executable("git") == 0 then
+    vim.notify("lazy.nvim is missing; install Git and restart Neovim to bootstrap plugins", vim.log.levels.WARN)
+    return
+  end
   local out = vim.fn.system({
     "git",
     "clone",
@@ -15,13 +19,13 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
       true,
       {}
     )
-    vim.fn.getchar()
-    os.exit(1)
+    return
   end
 end
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
+  lockfile = vim.fn.fnamemodify(vim.env.MYVIMRC, ":p:h") .. "/lazy-lock.json",
   spec = {
     { import = "plugins" },
   },
@@ -36,6 +40,7 @@ require("lazy").setup({
   ui = { border = "rounded" },
   performance = {
     rtp = {
+      reset = false, -- keep the config runtimepath when started with -u
       disabled_plugins = {
         "gzip",
         "matchit",

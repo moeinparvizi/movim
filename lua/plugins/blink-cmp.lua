@@ -15,6 +15,13 @@ return {
     },
   },
   opts = {
+    enabled = function() return vim.bo.filetype ~= "findpanel" end,
+    -- Windows cannot replace a DLL loaded by another Neovim process. Using
+    -- Blink's supported Lua matcher avoids download/rename races entirely.
+    fuzzy = {
+      implementation = vim.fn.has("win32") == 1 and "lua" or "prefer_rust_with_warning",
+      prebuilt_binaries = { download = vim.fn.has("win32") == 0 },
+    },
     snippets = { preset = "luasnip" },
     appearance = {
       nerd_font_variant = "normal",

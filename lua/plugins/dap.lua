@@ -22,15 +22,19 @@ return {
     local dap = require("dap")
 
     -- js-debug-adapter (installed via Mason)
+    local adapter_js = vim.fn.stdpath("data") .. "/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js"
+    local command = vim.fn.filereadable(adapter_js) == 1 and "node" or "js-debug-adapter"
+    local args = command == "node" and { adapter_js, "${port}" } or { "${port}" }
     dap.adapters["pwa-node"] = {
       type = "server",
       host = "localhost",
       port = "${port}",
       executable = {
-        command = "js-debug-adapter",
-        args = { "${port}" },
+        command = command,
+        args = args,
       },
     }
+    dap.adapters["pwa-chrome"] = dap.adapters["pwa-node"]
     for _, ft in ipairs({ "javascript", "typescript", "javascriptreact", "typescriptreact" }) do
       dap.configurations[ft] = {
         {
@@ -39,9 +43,9 @@ return {
           name = "Launch current file",
           cwd = "${workspaceFolder}",
           runtimeExecutable = "node",
-          runtimeArgs = { "--inspect-brk", "${file}" },
+          program = "${file}",
           sourceMaps = true,
-          console = "integratedTerminal",
+          console = "internalConsole",
         },
         {
           type = "pwa-node",
@@ -53,13 +57,11 @@ return {
           sourceMaps = true,
         },
         {
-          type = "pwa-node",
+          type = "pwa-chrome",
           request = "launch",
-          name = "npm run dev (debug)",
-          cwd = "${workspaceFolder}",
-          runtimeExecutable = "npm",
-          runtimeArgs = { "--inspect-brk", "run", "dev" },
-          console = "integratedTerminal",
+          name = "Launch Chrome (start web server first)",
+          url = function() return vim.fn.input("URL: ", "http://localhost:3000") end,
+          webRoot = "${workspaceFolder}",
           sourceMaps = true,
         },
       }

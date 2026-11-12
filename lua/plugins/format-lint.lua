@@ -6,22 +6,23 @@ return {
     cmd = { "ConformInfo" },
     opts = {
       format_on_save = function(bufnr)
-        -- skip if slow formatter unavailable
-        local ok = pcall(require("conform").get_formatter_info, "prettierd", bufnr)
+        if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then return end
         return { timeout_ms = 800, lsp_format = "fallback", quiet = true }
       end,
       formatters_by_ft = {
-        javascript = { "prettierd", stop_after_first = true },
-        javascriptreact = { "prettierd", stop_after_first = true },
-        typescript = { "prettierd", stop_after_first = true },
-        typescriptreact = { "prettierd", stop_after_first = true },
-        html = { "prettierd", stop_after_first = true },
-        css = { "prettierd", stop_after_first = true },
-        scss = { "prettierd", stop_after_first = true },
-        json = { "prettierd", stop_after_first = true },
-        jsonc = { "prettierd", stop_after_first = true },
-        yaml = { "prettierd", stop_after_first = true },
-        markdown = { "prettierd", stop_after_first = true },
+        javascript = { "prettier", "prettierd", stop_after_first = true },
+        javascriptreact = { "prettier", "prettierd", stop_after_first = true },
+        typescript = { "prettier", "prettierd", stop_after_first = true },
+        typescriptreact = { "prettier", "prettierd", stop_after_first = true },
+        vue = { "prettier", "prettierd", stop_after_first = true },
+        svelte = { "prettier", "prettierd", stop_after_first = true },
+        html = { "prettier", "prettierd", stop_after_first = true },
+        css = { "prettier", "prettierd", stop_after_first = true },
+        scss = { "prettier", "prettierd", stop_after_first = true },
+        json = { "prettier", "prettierd", stop_after_first = true },
+        jsonc = { "prettier", "prettierd", stop_after_first = true },
+        yaml = { "prettier", "prettierd", stop_after_first = true },
+        markdown = { "prettier", "prettierd", stop_after_first = true },
         lua = { "stylua" },
       },
     },

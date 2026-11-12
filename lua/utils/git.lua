@@ -1,5 +1,5 @@
 -- Smart Git operations — the WebStorm-style workflow:
---  * smart pull  (<leader>gp): autostash + rebase pull; on conflict opens Diffview
+--  * smart pull  (<leader>gp): choose a remote branch, merge, resolve conflicts
 --  * push        (<leader>gP)
 --  * commit      (<leader>gc / <leader>gC)
 --  * stash       (<leader>gs / <leader>gS)
@@ -28,63 +28,174 @@ local function root()
   return vim.trim(out)
 end
 
----------------------------------------------------------------
--- SMART PULL — WebStorm "Update Project" (Ctrl+T):
--- stashes uncommitted changes, pulls with rebase, re-applies the stash;
--- if anything conflicts, opens Diffview's merge-tool to resolve.
----------------------------------------------------------------
-function M.smart_pull()
-  if not in_repo() then
-    return notify("Not inside a git repository", vim.log.levels.WARN)
-  end
-  vim.cmd("silent! wall")
+local function operation_root()
+  local lib = package.loaded["diffview.lib"]
+  local view = lib and lib.get_current_view()
+  return (view and view.adapter and view.adapter.ctx and view.adapter.ctx.toplevel) or root()
+end
 
-  notify("Pulling with autostash…")
-  local ok, out = git({ "pull", "--rebase", "--autostash", "--stat" })
+local pulling = {}
 
-  if ok then
-    notify("Update finished ✔\n" .. out:sub(1, 400))
-    vim.cmd("checktime")
-    -- refresh gitsigns if loaded
-    pcall(function()
-      require("gitsigns").refresh()
-    end)
-    return
-  end
+local function conflicted(cwd)
+  local result = vim.system({ "git", "-C", cwd, "diff", "--name-only", "--diff-filter=U", "-z" }, { text = true }):wait()
+  return result.code == 0 and (result.stdout or "") ~= ""
+end
 
-  -- Something went wrong — is it conflicts?
-  local _, status = git({ "status", "--porcelain" })
-  local conflicted = false
-  for line in status:gmatch("[^\r\n]+") do
-    if line:sub(1, 2):match("^(UU|AA|DD|AU|UA|DU|UD)") then
-      conflicted = true
-      break
+local function operation(cwd)
+  local merge = git({ "rev-parse", "-q", "--verify", "MERGE_HEAD" }, cwd)
+  if merge then return "merge" end
+  for _, name in ipairs({ "rebase-merge", "rebase-apply" }) do
+    local ok, path = git({ "rev-parse", "--git-path", name }, cwd)
+    if ok then
+      path = vim.trim(path)
+      if not path:match("^%a:[/\\]") and not path:match("^[/\\]") then path = vim.fs.joinpath(cwd, path) end
+      if vim.fn.isdirectory(path) == 1 then return "rebase" end
     end
-  end
-
-  if conflicted then
-    notify("Conflicts detected — opening Diffview.\nUse <leader>co / <leader>ct / <leader>cb to pick sides, then :Gcontinue", vim.log.levels.WARN)
-    vim.cmd("DiffviewOpen")
-  else
-    notify("git pull failed:\n" .. out:sub(1, 600), vim.log.levels.ERROR)
   end
 end
 
--- After resolving a smart-pull conflict
-function M.rebase_continue()
-  local ok, out = git({ "rebase", "--continue" })
-  if ok then
-    notify("Rebase continued ✔")
-    vim.cmd("DiffviewClose")
+local function current_branch(cwd)
+  local ok, branch = git({ "symbolic-ref", "--quiet", "--short", "HEAD" }, cwd)
+  return ok and vim.trim(branch) or nil
+end
+
+local function unsaved_in(cwd)
+  local prefix = vim.fs.normalize(cwd):gsub("/$", "") .. "/"
+  if vim.fn.has("win32") == 1 then prefix = prefix:lower() end
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].modified and vim.bo[buf].buftype == "" then
+      local path = vim.fs.normalize(vim.api.nvim_buf_get_name(buf))
+      if vim.fn.has("win32") == 1 then path = path:lower() end
+      if path:sub(1, #prefix) == prefix then return true end
+    end
+  end
+  return false
+end
+
+local function async_git(cwd, args, callback)
+  local ok, err = pcall(vim.system, { "git", "-C", cwd, unpack(args) },
+    { text = true, env = { GIT_TERMINAL_PROMPT = "0", GIT_MERGE_AUTOEDIT = "no" } },
+    function(result) vim.schedule(function() callback(result) end) end)
+  if not ok then
+    vim.schedule(function() callback({ code = -1, stderr = tostring(err) }) end)
+  end
+end
+
+local function resolve_notice(cwd)
+  if not conflicted(cwd) then return false end
+  local kind = operation(cwd)
+  local details, next_step
+  if kind == "merge" then
+    details = "Left = current branch (ours); right = incoming branch (theirs)."
+    next_step = "Save and stage each file, then :Gcontinue."
+  elseif kind == "rebase" then
+    details = "Rebase: left = upstream (ours); right = replayed local commit (theirs)."
+    next_step = "Save and stage each file, then :Gcontinue."
   else
-    notify(out:sub(1, 600), vim.log.levels.WARN)
+    details = "Conflicts while restoring autostash: left = merged result; right = saved local edits. The stash is retained."
+    next_step = "Save and stage each file; inspect git stash list before removing the retained stash."
+  end
+  notify("Conflicts detected. " .. details .. "\nChoose with Space cm, Space co or Space ct. " .. next_step, vim.log.levels.WARN)
+  local ok, err = pcall(vim.cmd.DiffviewOpen, { args = { "-C" .. cwd } })
+  if not ok then notify("Could not open Diffview: " .. tostring(err), vim.log.levels.ERROR) end
+  return true
+end
+
+function M.choose_conflict()
+  local ok, lib = pcall(require, "diffview.lib")
+  if not ok or not lib.get_current_view() then return notify("Open a conflicted file in Diffview first", vim.log.levels.WARN) end
+  local kind = operation(operation_root())
+  local choices
+  if kind == "merge" then
+    choices = { { label = "Left: current branch (ours)", side = "ours" }, { label = "Right: incoming branch (theirs)", side = "theirs" } }
+  elseif kind == "rebase" then
+    choices = { { label = "Left: upstream (ours)", side = "ours" }, { label = "Right: replayed local commit (theirs)", side = "theirs" } }
+  else
+    choices = { { label = "Left: merged result (ours)", side = "ours" }, { label = "Right: saved local edits (theirs)", side = "theirs" } }
+  end
+  vim.ui.select(choices, { prompt = "Choose a side for the conflict under the cursor:", format_item = function(item) return item.label end }, function(choice)
+    if choice then require("diffview.actions").conflict_choose(choice.side)() end
+  end)
+end
+
+local function start_pull(cwd, branch, remote, source)
+  if pulling[cwd] then return notify("A pull is already running for this repository", vim.log.levels.WARN) end
+  if current_branch(cwd) ~= branch then return notify("Current branch changed; reopen the pull picker", vim.log.levels.WARN) end
+  if operation(cwd) or conflicted(cwd) then return notify("Finish or abort the current Git operation first", vim.log.levels.WARN) end
+  if unsaved_in(cwd) then return notify("Save modified project buffers before pulling", vim.log.levels.WARN) end
+  pulling[cwd] = true
+  notify("Pulling " .. remote .. "/" .. source .. " into " .. branch .. "…")
+  async_git(cwd, { "pull", "--no-rebase", "--autostash", "--no-edit", "--stat", remote, source }, function(result)
+    pulling[cwd] = nil
+    vim.cmd("checktime")
+    pcall(function() require("gitsigns").refresh() end)
+    if resolve_notice(cwd) then return end
+    local output = vim.trim((result.stdout or "") .. "\n" .. (result.stderr or ""))
+    if result.code == 0 then
+      notify("Pull finished: " .. remote .. "/" .. source .. " → " .. branch .. "\n" .. output:sub(1, 600))
+    else
+      notify("Pull failed (your branch was not switched):\n" .. output:sub(1, 1000), vim.log.levels.ERROR)
+    end
+  end)
+end
+
+local function choose_branch(cwd, branch, remote)
+  notify("Loading branches from " .. remote .. "…")
+  async_git(cwd, { "ls-remote", "--heads", remote }, function(result)
+    if result.code ~= 0 then return notify("Could not list remote branches:\n" .. (result.stderr or ""):sub(1, 800), vim.log.levels.ERROR) end
+    local branches = {}
+    for line in (result.stdout or ""):gmatch("[^\r\n]+") do
+      local name = line:match("^[%x]+%s+refs/heads/(.+)$")
+      if name then branches[#branches + 1] = name end
+    end
+    table.sort(branches)
+    if #branches == 0 then return notify("No branches found on " .. remote, vim.log.levels.WARN) end
+    vim.ui.select(branches, { prompt = "Pull from " .. remote .. " into " .. branch .. ":" }, function(source)
+      if source then start_pull(cwd, branch, remote, source) end
+    end)
+  end)
+end
+
+function M.smart_pull()
+  if not in_repo() then return notify("Not inside a git repository", vim.log.levels.WARN) end
+  local cwd = root()
+  local branch = current_branch(cwd)
+  if not branch then return notify("Checkout a branch before pulling (detached HEAD)", vim.log.levels.WARN) end
+  if pulling[cwd] or operation(cwd) or conflicted(cwd) then return notify("Finish or abort the current Git operation first", vim.log.levels.WARN) end
+  if unsaved_in(cwd) then return notify("Save modified project buffers before pulling", vim.log.levels.WARN) end
+  local ok, out = git({ "remote" }, cwd)
+  local remotes = {}
+  if ok then for name in out:gmatch("[^\r\n]+") do remotes[#remotes + 1] = name end end
+  if #remotes == 0 then return notify("No Git remote configured", vim.log.levels.WARN) end
+  if #remotes == 1 then return choose_branch(cwd, branch, remotes[1]) end
+  vim.ui.select(remotes, { prompt = "Remote to pull into " .. branch .. ":" }, function(remote)
+    if remote then choose_branch(cwd, branch, remote) end
+  end)
+end
+
+-- Continue/abort only the operation Git actually has in progress.
+function M.rebase_continue()
+  local cwd = operation_root()
+  if conflicted(cwd) then return notify("Resolve, save and stage every conflicted file before continuing", vim.log.levels.WARN) end
+  local kind = operation(cwd)
+  if not kind then return notify("No merge or rebase in progress. If an autostash conflicted, it remains in git stash list.", vim.log.levels.INFO) end
+  local ok, out = git({ "-c", "core.editor=true", kind, "--continue" }, cwd)
+  if ok then
+    notify(kind .. " continued ✔\n" .. out:sub(1, 500))
+    pcall(vim.cmd.DiffviewClose)
+    resolve_notice(cwd)
+  elseif not resolve_notice(cwd) then
+    notify(out:sub(1, 800), vim.log.levels.WARN)
   end
 end
 
 function M.rebase_abort()
-  local ok, out = git({ "rebase", "--abort" })
-  notify(ok and "Rebase aborted" or ("Abort failed:\n" .. out:sub(1, 400)), ok and vim.log.levels.INFO or vim.log.levels.WARN)
-  pcall(vim.cmd.DiffviewClose)
+  local cwd = operation_root()
+  local kind = operation(cwd)
+  if not kind then return notify("No merge or rebase to abort. An autostash may still be present in git stash list.", vim.log.levels.WARN) end
+  local ok, out = git({ kind, "--abort" }, cwd)
+  notify(ok and (kind .. " aborted\n" .. out:sub(1, 400)) or ("Abort failed:\n" .. out:sub(1, 600)), ok and vim.log.levels.INFO or vim.log.levels.WARN)
+  if ok then pcall(vim.cmd.DiffviewClose); resolve_notice(cwd) end
 end
 
 ---------------------------------------------------------------

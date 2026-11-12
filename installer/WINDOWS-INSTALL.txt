@@ -1,0 +1,18 @@
+movim for Windows x64
+
+Open a NEW PowerShell window after installation and run:
+    nvim
+To open a project:
+    nvim "C:\path\to\your\project"
+
+Windows Terminal needs a Nerd Font for the icons. Open the installed fonts
+folder, right-click the JetBrainsMonoNLNerdFontMono-Regular.ttf file and choose
+Install, then select "JetBrainsMonoNL Nerd Font Mono" in Windows Terminal's
+profile appearance settings. Restart the terminal.
+
+Git is required for Git features and plugin updates; install Git for Windows
+separately if it is not already on the machine. Node.js, ripgrep, lazygit,
+Neovim, the plugins and language tools are included in this package.
+
+The configuration and its runtime are contained in the installation folder.
+Existing Neovim configuration is not replaced.

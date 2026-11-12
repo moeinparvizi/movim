@@ -29,6 +29,8 @@ return {
       { "<leader>g", group = "Git" },
       { "<leader>gh", group = "Git hunk" },
       { "<leader>h", group = "History" },
+      { "<leader>k", group = "Bookmarks" },
+      { "<leader>m", group = "Multiple cursors", mode = { "n", "x" } },
       { "<leader>r", group = "Run project" },
       { "<leader>s", group = "Search" },
       { "<leader>u", group = "UI toggle" },

@@ -14,7 +14,7 @@ return {
   opts = {
     view = {
       merge_tool = {
-        layout = "diff3",
+        layout = "diff3_horizontal",
         disable_diagnostics = true,
         winbar_info = true,
       },
