@@ -2,7 +2,7 @@
   const releaseStatus = document.getElementById('release-status');
   if (releaseStatus) {
     const releasePage = 'https://github.com/moeinparvizi/movim/releases';
-    fetch('https://api.github.com/repos/moeinparvizi/movim/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    fetch('https://api.github.com/repos/moeinparvizi/movim/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(8000) })
       .then(response => { if (!response.ok) throw new Error('No public release'); return response.json(); })
       .then(release => {
         const assets = Array.isArray(release.assets) ? release.assets : [];
