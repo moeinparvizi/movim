@@ -7,7 +7,7 @@
 ## ویژگی‌های کلیدی
 
 - 🧠 **هوشمندی کد کامل**: vtsls + angularls — اتوکامپلیت، hover، refactor، inlay hints
-- 🔀 **پول هوشمند** (`<leader>gp`): autostash + rebase مثل Ctrl+T وب‌استورم؛ کانفلیکت → باز شدن خودکار Diffview با انتخاب ours/theirs/both (`co/ct/cb`)
+- 🔀 **پول هوشمند** (`<leader>gp`): انتخاب شاخهٔ ریموت و merge با autostash؛ تعارض → باز شدن Diffview با انتخاب ours/theirs/both (`co/ct/cb`)
 - ✏️ **Rename هوشمند** (`S-F6`) حتی داخل template های انگولار
 - 🖱️ **Alt+Click** → تعریف | **Ctrl+Click** → مولتی‌کرسر
 - 🕰️ **Local History** (`<leader>hl`): اسنپ‌شات خودکار هر ذخیره + بازگردانی — عین وب‌استورم
@@ -20,18 +20,7 @@
 
 ## نصب
 
-```bash
-# پیش‌نیازها (macOS)
-brew install neovim node ripgrep fd lazygit
-brew install --cask font-jetbrains-mono-nerd-font
-
-# کانفیگ
-mv ~/.config/nvim ~/.config/nvim.bak   # اگر قبلی دارید
-git clone https://github.com/moeinparvizi/movim.git ~/.config/nvim
-nvim   # اولین اجرا: پلاگین‌ها + LSP خودکار نصب می‌شوند
-```
-
-یا: `bash <(curl -s https://raw.githubusercontent.com/moeinparvizi/neovim/main/install.sh)`
+برای دریافت بسته و نصب روی ویندوز، مک Intel یا Apple Silicon و لینوکس، [راهنمای نصب پلتفرم‌ها](docs/19-platform-install.md) را ببینید. پس از نصب، [راهنمای به‌روزرسانی](docs/18-updates.md) روش دریافت نسخه‌های جدید را توضیح می‌دهد.
 
 ## پشته فناوری
 
