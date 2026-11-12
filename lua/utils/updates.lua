@@ -33,6 +33,8 @@ function M.check(manual)
   vim.system({ 'curl', '--fail', '--silent', '--show-error', '--location', '--max-time', '8',
     '-H', 'Accept: application/vnd.github+json', '-H', 'User-Agent: movim-update-check', api }, { text = true }, function(result)
     vim.schedule(function()
+      pcall(vim.fn.mkdir, vim.fn.stdpath('state'), 'p')
+      pcall(vim.fn.writefile, { vim.json.encode({ checked = os.time() }) }, cache)
       if result.code ~= 0 then
         if manual then vim.notify('Could not check releases. Check your connection or visit ' .. page, vim.log.levels.WARN) end
         return
@@ -42,8 +44,6 @@ function M.check(manual)
         if manual then vim.notify('No stable movim release is available yet.', vim.log.levels.INFO) end
         return
       end
-      pcall(vim.fn.mkdir, vim.fn.stdpath('state'), 'p')
-      pcall(vim.fn.writefile, { vim.json.encode({ checked = os.time() }) }, cache)
       local current = require('config.version')
       if M.is_newer(current, release.tag_name) then
         vim.notify(('movim %s is available (installed: %s). Download: %s'):format(release.tag_name, current, page), vim.log.levels.INFO, { title = 'movim update' })
