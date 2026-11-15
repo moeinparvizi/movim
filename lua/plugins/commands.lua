@@ -46,10 +46,10 @@ return {
     vim.api.nvim_create_user_command("PersianOn", function()
       vim.opt.keymap = "persian"
       vim.bo.iminsert = 1
-    end, { desc = "فعال‌سازی تایپ فارسی" })
+    end, { desc = "Enable Persian input" })
     vim.api.nvim_create_user_command("PersianOff", function()
       vim.bo.iminsert = 0
-    end, { desc = "بازگشت به تایپ انگلیسی" })
+    end, { desc = "Enable English input" })
     vim.api.nvim_create_user_command("PersianToggle", function()
       if vim.bo.iminsert == 1 then
         vim.bo.iminsert = 0
@@ -57,7 +57,7 @@ return {
         vim.opt.keymap = "persian"
         vim.bo.iminsert = 1
       end
-    end, { desc = "تغییر فارسی/انگلیسی" })
+    end, { desc = "Toggle Persian/English input" })
 
     -------------------------------------------------------------
     -- UI toggles that need libraries

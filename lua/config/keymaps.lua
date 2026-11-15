@@ -7,11 +7,13 @@ end
 -- Persian input: F9 toggles the Persian keyboard inside insert mode
 -----------------------------------------------------------
 map("<F9>", "<C-^>", "Toggle Persian/English typing (insert)", { "i", "c" })
-map("<M-Space>", "‌", "Insert نیم‌فاصله (ZWNJ)", "i")
+map("<M-Space>", "‌", "Insert zero-width non-joiner (ZWNJ)", "i")
 map("<leader>ur", function()
   vim.wo.rightleft = not vim.wo.rightleft
   vim.notify("Text direction: " .. (vim.wo.rightleft and "right to left" or "left to right"))
 end, "Toggle right-to-left display")
+
+map("<leader>uP", "<cmd>PersianDisplayToggle<CR>", "Toggle Persian display correction")
 
 -----------------------------------------------------------
 -- Better defaults

@@ -1,0 +1,179 @@
+name: Build and publish synchronized release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: movim-release
+  cancel-in-progress: false
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.version.outputs.commit }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require documentation for behavior changes
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: node scripts/check-docs.cjs "$BEFORE"
+      - name: Stamp a shared version in source
+        id: version
+        run: |
+          version=$(node scripts/bump-version.cjs)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lua/config/version.lua site/package.json site/package-lock.json
+          git commit -m "Release v$version [skip ci]"
+          git push origin HEAD:main
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  windows:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.commit }}
+          path: neovim
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: choco install innosetup --no-progress -y
+      - name: Prepare portable runtime and pinned plugins
+        shell: powershell
+        run: ./neovim/installer/prepare-windows.ps1
+      - name: Build Windows and macOS packages from the same checkout
+        shell: powershell
+        run: ./neovim/installer/build-installers.ps1
+      - name: Install and validate in a fresh directory
+        shell: powershell
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'movim clean'
+          $p = Start-Process ./movim-Setup.exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=""',('/DIR="' + $target + '"')) -WindowStyle Hidden -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installation failed: $($p.ExitCode)" }
+          node neovim/installer/verify-package.cjs "$target/neovim"
+          Expand-Archive ./movim-macOS.zip "$env:RUNNER_TEMP/mac-package"
+          node neovim/installer/verify-package.cjs "$env:RUNNER_TEMP/mac-package/movim-macOS/config"
+          $env:NVIM_APPNAME = 'inherited-other-app'
+          & "$target/neovim/start-webstorm.ps1" --headless -l "$env:GITHUB_WORKSPACE/neovim/tests/startup.lua"
+          if ($LASTEXITCODE -ne 0) { throw 'Clean startup failed.' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers
+          path: |
+            movim-Setup.exe
+            movim-macOS.zip
+  unix:
+    needs: version
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.commit }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test Neovim
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            brew install neovim
+          else
+            curl -fL --retry 3 https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz -o /tmp/nvim.tar.gz
+            tar -xzf /tmp/nvim.tar.gz -C /tmp
+            echo /tmp/nvim-linux-x86_64/bin >> "$GITHUB_PATH"
+          fi
+      - name: Check native theme fallback and shell syntax
+        shell: bash
+        run: |
+          export XDG_STATE_HOME="$RUNNER_TEMP/movim-state"
+          export XDG_DATA_HOME="$RUNNER_TEMP/movim-data"
+          nvim --headless -u NONE -l tests/theme.lua
+          bash -n installer/macos/Install.command
+          bash -n installer/linux/Install.sh
+      - name: Build and verify Linux archive
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          bash installer/build-linux.sh "$RUNNER_TEMP/movim-linux.tar.gz"
+          mkdir "$RUNNER_TEMP/linux-package"
+          tar -xzf "$RUNNER_TEMP/movim-linux.tar.gz" -C "$RUNNER_TEMP/linux-package"
+          node installer/verify-package.cjs "$RUNNER_TEMP/linux-package/movim-linux/config"
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: linux
+          path: ${{ runner.temp }}/movim-linux.tar.gz
+  site:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.commit }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci && npm test
+        working-directory: site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website
+          path: site/dist
+  publish:
+    needs: [version, windows, unix, site]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: installers
+          path: assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux
+          path: assets
+      - name: Publish all platform assets together
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+          COMMIT: ${{ needs.version.outputs.commit }}
+        run: |
+          cd assets
+          sha256sum movim-* > SHA256SUMS
+          printf 'Source: %s\n\nAll platform packages and documentation were built from this commit. See the English guide and CHANGELOG.md.\n' "$COMMIT" > notes.md
+          gh release create "v$VERSION" movim-Setup.exe movim-macOS.zip movim-linux.tar.gz SHA256SUMS --target "$COMMIT" --title "movim v$VERSION" --notes-file notes.md --latest
+      - uses: actions/download-artifact@v4
+        with:
+          name: website
+          path: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

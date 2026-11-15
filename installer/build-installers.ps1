@@ -4,7 +4,17 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 if ($MacOnly -and $WindowsOnly) { throw 'Select at most one of -MacOnly and -WindowsOnly.' }
+$versionSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot '../lua/config/version.lua') -Raw
+if ($versionSource -notmatch "return ['`"](\d+\.\d+\.\d+)['`"]") { throw 'Invalid movim release version.' }
+$version = $Matches[1]
 $workspace = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..')).TrimEnd('\')
+$node = Get-Command node -ErrorAction SilentlyContinue
+if ($node) { $nodePath = $node.Source } else {
+  $nodePath = (Get-ChildItem -Path (Join-Path $workspace '.tools/node-v*-win-x64/node.exe') | Select-Object -First 1).FullName
+}
+if (-not $nodePath) { throw 'Node.js is required to generate the release manifest.' }
+& $nodePath (Join-Path $PSScriptRoot 'manifest.cjs')
+if ($LASTEXITCODE -ne 0) { throw 'Could not generate the release manifest.' }
 
 function Add-PackageFile($archive, [string]$source, [string]$name, [bool]$executable = $false) {
   $entry = $archive.CreateEntry($name.Replace('\', '/'), [IO.Compression.CompressionLevel]::Optimal)
@@ -31,11 +41,11 @@ if (-not $WindowsOnly) {
       Add-PackageFile $zip (Join-Path $mac 'Install.command') 'movim-macOS/Install.command' $true
       Add-PackageFile $zip (Join-Path $mac 'README.txt') 'movim-macOS/README.txt'
       $config = Join-Path $workspace 'neovim'
-      foreach ($file in @('init.lua', 'lazy-lock.json', 'README.md', 'LICENSE')) {
+      foreach ($file in @('init.lua', 'lazy-lock.json', 'README.md', 'LICENSE', 'CHANGELOG.md', 'release.json', 'site/docs-en/README.md')) {
         $path = Join-Path $config $file
         if (Test-Path -LiteralPath $path -PathType Leaf) { Add-PackageFile $zip $path "movim-macOS/config/$file" }
       }
-      foreach ($directory in @('lua', 'keymap', 'docs')) {
+      foreach ($directory in @('lua', 'colors', 'keymap', 'docs', 'fonts')) {
         $base = Join-Path $config $directory
         if (Test-Path -LiteralPath $base -PathType Container) {
           Get-ChildItem -LiteralPath $base -Recurse -File | ForEach-Object {
@@ -84,7 +94,7 @@ if (-not $MacOnly) {
     $createdMapping = $true
   }
   try {
-    & $compiler /Qp 'Z:\neovim\installer\setup.iss'
+    & $compiler "/DProductVersion=$version" 'Z:\neovim\installer\setup.iss'
     if ($LASTEXITCODE -ne 0) { throw "Windows installer build failed ($LASTEXITCODE)." }
     Write-Host "Created $(Join-Path $workspace 'movim-Setup.exe')"
   } finally {

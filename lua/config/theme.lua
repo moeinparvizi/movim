@@ -251,7 +251,14 @@ vim.api.nvim_create_autocmd("ColorScheme", {
 
 function M.load()
   add_installed_paths()
-  vim.schedule(function() M.set(M.get()) end)
+  local selected = M.get()
+  if apply(selected, true) then return end
+  if selected ~= DEFAULT_THEME and apply(DEFAULT_THEME, true) then
+    vim.notify('Saved theme "' .. selected .. '" is unavailable; using TokyoNight. Install it with :Themes.', vim.log.levels.WARN)
+    return
+  end
+  apply('movim', true)
+  vim.notify('Using the bundled movim palette. Run :Lazy restore when plugins are available.', vim.log.levels.WARN)
 end
 
 vim.api.nvim_create_user_command("Themes", M.picker, { desc = "Browse and install themes" })

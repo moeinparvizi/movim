@@ -18,14 +18,14 @@ return {
         {
           "filename",
           path = 1,
-          symbols = { modified = "●", readonly = "[RO]", unnamed = "[بدون نام]" },
+          symbols = { modified = "●", readonly = "[RO]", unnamed = "[No Name]" },
         },
       },
       lualine_x = {
         {
           function()
             if vim.bo.iminsert == 1 and vim.bo.keymap ~= "" then
-              return "فارسی"
+              return "FA"
             end
             return ""
           end,

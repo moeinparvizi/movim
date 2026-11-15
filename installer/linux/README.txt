@@ -7,3 +7,6 @@ movim for Linux (x86_64 and ARM64)
 
 The installer keeps this configuration separate under XDG_CONFIG_HOME/movim
 and backs up a previous movim configuration. Plugins are installed on first run.
+
+The installer includes DejaVuSansM Nerd Font Mono. Select it in your terminal
+for Persian glyphs and icons.

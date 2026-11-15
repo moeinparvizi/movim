@@ -1,4 +1,9 @@
+#ifndef Workspace
 #define Workspace "Z:"
+#endif
+#ifndef ProductVersion
+#error ProductVersion must be supplied by build-installers.ps1
+#endif
 #define ProductName "movim"
 #ifdef TestBuild
 #define ProductId "WebNeovim-InstallerTest-2026"
@@ -10,7 +15,7 @@
 [Setup]
 AppId={#ProductId}
 AppName={#ProductName}
-AppVersion=1.0.0
+AppVersion={#ProductVersion}
 AppPublisher=movim
 DefaultDirName={localappdata}\Programs\movim
 DefaultGroupName=movim
@@ -27,36 +32,48 @@ DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\.tools\nvim-win64\bin\nvim.exe
 
 [Tasks]
-Name: addpath; Description: "Add movim to the current user's PATH (run nvim in a new PowerShell window)"; Flags: checkedonce
+Name: addpath; Description: "Add movim to the current user's PATH (run movim or nvim in a new PowerShell window)"; Flags: checkedonce
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 
 [Files]
-Source: "{#Workspace}\nvim.cmd"; DestDir: "{app}"
-Source: "{#Workspace}\start-webstorm.cmd"; DestDir: "{app}"
-Source: "{#Workspace}\neovim\init.lua"; DestDir: "{app}\neovim"
-Source: "{#Workspace}\neovim\lazy-lock.json"; DestDir: "{app}\neovim"
-Source: "{#Workspace}\neovim\start-webstorm.cmd"; DestDir: "{app}\neovim"
-Source: "{#Workspace}\neovim\start-webstorm.ps1"; DestDir: "{app}\neovim"
-Source: "{#Workspace}\neovim\README.md"; DestDir: "{app}\neovim"
-Source: "{#Workspace}\neovim\LICENSE"; DestDir: "{app}\neovim"; Flags: skipifsourcedoesntexist
-Source: "{#Workspace}\neovim\lua\*"; DestDir: "{app}\neovim\lua"; Flags: recursesubdirs createallsubdirs
-Source: "{#Workspace}\neovim\keymap\*"; DestDir: "{app}\neovim\keymap"; Flags: recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "{#Workspace}\neovim\docs\*"; DestDir: "{app}\neovim\docs"; Flags: recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "{#Workspace}\.tools\nvim-win64\*"; DestDir: "{app}\.tools\nvim-win64"; Flags: recursesubdirs createallsubdirs
-Source: "{#Workspace}\.tools\node-v22.23.5-win-x64\*"; DestDir: "{app}\.tools\node-v22.23.5-win-x64"; Flags: recursesubdirs createallsubdirs
-Source: "{#Workspace}\.tools\lazygit\*"; DestDir: "{app}\.tools\lazygit"; Flags: recursesubdirs createallsubdirs
-Source: "{#Workspace}\.tools\compiler\node_modules\@ryoppippi\zig-win32-x64\*"; DestDir: "{app}\.tools\compiler\node_modules\@ryoppippi\zig-win32-x64"; Flags: recursesubdirs createallsubdirs
-Source: "{#Workspace}\.tools\bin\rg.exe"; DestDir: "{app}\.tools\bin"
-Source: "{#Workspace}\.isolated\data\nvim-data\lazy\*"; DestDir: "{app}\.isolated\data\nvim-data\lazy"; Flags: recursesubdirs createallsubdirs; Excludes: ".git\*"
-Source: "{#Workspace}\.isolated\data\nvim-data\site\*"; DestDir: "{app}\.isolated\data\nvim-data\site"; Flags: recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "{#GetEnv('LOCALAPPDATA')}\Microsoft\Windows\Fonts\JetBrainsMonoNLNerdFontMono-Regular.ttf"; DestDir: "{app}\fonts"; Flags: skipifsourcedoesntexist
-Source: "WINDOWS-INSTALL.txt"; DestDir: "{app}"; Flags: isreadme
+Source: "movim.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "nvim.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "start-webstorm.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\CHANGELOG.md"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\site\docs-en\README.md"; DestDir: "{app}\neovim\site\docs-en"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\release.json"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\init.lua"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\lazy-lock.json"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\start-webstorm.cmd"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\start-webstorm.ps1"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\README.md"; DestDir: "{app}\neovim"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\LICENSE"; DestDir: "{app}\neovim"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#Workspace}\neovim\lua\*"; DestDir: "{app}\neovim\lua"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\neovim\colors\*"; DestDir: "{app}\neovim\colors"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\neovim\keymap\*"; DestDir: "{app}\neovim\keymap"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "{#Workspace}\neovim\docs\*"; DestDir: "{app}\neovim\docs"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
-Source: "{#Workspace}\.tools\installer-runtime.tar"; DestDir: "{tmp}"; Flags: deleteafterinstall
+; Persian-capable monospaced Nerd Font; selected in the terminal separately.
+Source: "{#Workspace}\neovim\fonts\DejaVuSansMNerdFontMono-Regular.ttf"; DestDir: "{autofonts}"; FontInstall: "DejaVuSansM Nerd Font Mono"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#Workspace}\neovim\fonts\DejaVuSansMNerdFontMono-Bold.ttf"; DestDir: "{autofonts}"; FontInstall: "DejaVuSansM Nerd Font Mono Bold"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#Workspace}\neovim\fonts\DejaVuSansMNerdFontMono-Oblique.ttf"; DestDir: "{autofonts}"; FontInstall: "DejaVuSansM Nerd Font Mono Oblique"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#Workspace}\neovim\fonts\DejaVuSansMNerdFontMono-BoldOblique.ttf"; DestDir: "{autofonts}"; FontInstall: "DejaVuSansM Nerd Font Mono Bold Oblique"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "{#Workspace}\neovim\fonts\*"; DestDir: "{app}\neovim\fonts"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\.tools\nvim-win64\*"; DestDir: "{app}\.tools\nvim-win64"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\.tools\node-v22.23.5-win-x64\*"; DestDir: "{app}\.tools\node-v22.23.5-win-x64"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\.tools\lazygit\*"; DestDir: "{app}\.tools\lazygit"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\.tools\compiler\node_modules\@ryoppippi\zig-win32-x64\*"; DestDir: "{app}\.tools\compiler\node_modules\@ryoppippi\zig-win32-x64"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\.tools\bin\rg.exe"; DestDir: "{app}\.tools\bin"; Flags: ignoreversion
+Source: "{#Workspace}\.isolated\data\nvim-data\lazy\*"; DestDir: "{app}\.isolated\data\nvim-data\lazy"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: ".git\*"
+Source: "{#Workspace}\.isolated\data\nvim-data\site\*"; DestDir: "{app}\.isolated\data\nvim-data\site"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "{#GetEnv('LOCALAPPDATA')}\Microsoft\Windows\Fonts\JetBrainsMonoNLNerdFontMono-Regular.ttf"; DestDir: "{app}\fonts"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "WINDOWS-INSTALL.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
+
+Source: "{#Workspace}\.tools\installer-runtime.tar"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall
 
 [Icons]
-Name: "{group}\movim"; Filename: "{app}\nvim.cmd"; WorkingDir: "{userdocs}"
-Name: "{autodesktop}\movim"; Filename: "{app}\nvim.cmd"; WorkingDir: "{userdocs}"; Tasks: desktopicon
+Name: "{group}\movim"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"
+Name: "{autodesktop}\movim"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"; Tasks: desktopicon
 
 [Code]
 const EnvKey = 'Environment';

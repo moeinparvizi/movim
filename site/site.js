@@ -34,8 +34,8 @@
     document.querySelector('[data-nav-label]')?.setAttribute('aria-label', fa ? 'ناوبری اصلی' : 'Main navigation');
     document.querySelector('[data-editor-label]')?.setAttribute('aria-label', fa ? 'نمایشی از محیط توسعه movim' : 'Preview of the movim development environment');
     toggle.setAttribute('aria-label', fa ? 'Switch to English' : 'تغییر زبان به فارسی');
-    document.querySelectorAll('[data-docs-link]').forEach(link => { link.href = fa ? 'docs/README.html' : 'docs-en/README.html'; });
-    document.querySelectorAll('[data-install-link]').forEach(link => { link.href = fa ? 'docs/19-platform-install.html' : 'docs-en/README.html#installation'; });
+    document.querySelectorAll('[data-docs-link]').forEach(link => { link.href = 'docs-en/README.html'; });
+    document.querySelectorAll('[data-install-link]').forEach(link => { link.href = 'docs-en/README.html#installation'; });
     renderRelease();
   }
   if (toggle) {

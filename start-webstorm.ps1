@@ -5,6 +5,7 @@ $state = Join-Path $workspace '.isolated'
 $nvim = Join-Path $tools 'nvim-win64\bin\nvim.exe'
 $node = Get-ChildItem -LiteralPath $tools -Directory -Filter 'node-v*-win-x64' | Select-Object -First 1
 if (!(Test-Path -LiteralPath $nvim) -or !$node) { throw 'Portable Neovim or Node.js is missing in the workspace .tools directory.' }
+$env:NVIM_APPNAME = 'nvim'
 $env:LOCALAPPDATA = $state
 $env:XDG_DATA_HOME = Join-Path $state 'data'
 $env:XDG_STATE_HOME = Join-Path $state 'state'
@@ -25,6 +26,5 @@ if ($forwardArgs.Count -gt 0 -and (Test-Path -LiteralPath $forwardArgs[0] -PathT
   Set-Location -LiteralPath $forwardArgs[0]
   $forwardArgs = @($forwardArgs | Select-Object -Skip 1)
 }
-$runtime = $PSScriptRoot.Replace('\','/')
-& $nvim --cmd "set rtp^=$runtime" -u (Join-Path $PSScriptRoot 'init.lua') @forwardArgs
+& $nvim -u (Join-Path $PSScriptRoot 'init.lua') @forwardArgs
 exit $LASTEXITCODE

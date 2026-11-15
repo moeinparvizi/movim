@@ -31,3 +31,7 @@ movim checks GitHub Releases for a newer stable version in the background at mos
 ## License
 
 [MIT](LICENSE)
+
+## Release consistency
+
+Every main update builds and validates all platform downloads and deploys the matching website and documentation. Packages include a version, source commit and file hashes in `release.json`; release assets include `SHA256SUMS`. The editor UI is English, and a bundled startup palette keeps the interface readable when plugins or the saved theme are missing. See [release maintenance](installer/RELEASING.md) and [changes](CHANGELOG.md).

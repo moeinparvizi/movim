@@ -34,9 +34,13 @@ fi
 eval "$(brew shellenv)"
 
 echo 'Installing Neovim, Node.js, ripgrep, fd and lazygit...'
-brew install neovim node ripgrep fd lazygit
-if ! brew install --cask font-jetbrains-mono-nerd-font; then
-  echo 'Font installation failed. You can install the JetBrains Mono Nerd Font later.' >&2
+brew install neovim node ripgrep fd lazygit git
+if [ -d "$CONFIG_SOURCE/fonts" ]; then
+  mkdir -p "$HOME/Library/Fonts"
+  for font in "$CONFIG_SOURCE"/fonts/*.ttf; do
+    [ -f "$font" ] || continue
+    [ -e "$HOME/Library/Fonts/$(basename "$font")" ] || cp "$font" "$HOME/Library/Fonts/"
+  done
 fi
 
 CONFIG_DIR="$HOME/.config/web-neovim"
@@ -98,5 +102,5 @@ NVIM_APPNAME=web-neovim nvim --headless '+Lazy! install' '+Lazy! restore' '+qa'
 echo
 echo 'Installation complete. Open a new Terminal and run: movim'
 echo 'You can also open Applications/movim.command.'
-echo 'Select JetBrainsMono Nerd Font in your terminal settings to display icons.'
+echo 'Select DejaVuSansM Nerd Font Mono in your terminal settings for Persian glyphs and icons.'
 read -r -p 'Press Enter to close. ' _ || true

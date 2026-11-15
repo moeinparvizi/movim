@@ -25,6 +25,15 @@ if [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
 fi
 mkdir -p "$CONFIG_DIR"
 cp -R "$SOURCE/." "$CONFIG_DIR/"
+if [ -d "$SOURCE/fonts" ]; then
+  FONT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/movim"
+  mkdir -p "$FONT_DIR"
+  for font in "$SOURCE"/fonts/*.ttf; do
+    [ -f "$font" ] || continue
+    [ -e "$FONT_DIR/$(basename "$font")" ] || cp "$font" "$FONT_DIR/"
+  done
+  if command -v fc-cache >/dev/null 2>&1; then fc-cache -f "$FONT_DIR" || true; fi
+fi
 cat > "$BIN_DIR/movim" <<'LAUNCHER'
 #!/usr/bin/env bash
 export NVIM_APPNAME=movim
@@ -33,4 +42,5 @@ exec nvim "$@"
 LAUNCHER
 chmod 755 "$BIN_DIR/movim"
 echo 'Installed. Run ~/.local/bin/movim (add ~/.local/bin to PATH if needed).'
+echo 'Select DejaVuSansM Nerd Font Mono in your terminal settings for Persian glyphs and icons.'
 echo 'The first run installs plugins and language tools; Git and an internet connection are required.'

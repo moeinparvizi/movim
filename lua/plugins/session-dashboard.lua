@@ -35,7 +35,7 @@ return {
           { desc = " Restore session", group = "Label", action = "lua require('persistence').load()", key = "s" },
           { desc = " Explorer", group = "Label", action = "Neotree toggle left", key = "e" },
         },
-        footer = { "docs/ ← آموزش فارسی" },
+        footer = { "Documentation: https://moeinparvizi.github.io/movim/docs-en/README.html" },
       },
     },
     config = function(_, opts)

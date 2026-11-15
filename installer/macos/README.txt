@@ -10,6 +10,7 @@ movim for macOS
 The installer downloads dependencies and plugins, so internet access is needed.
 It installs a separate Neovim configuration named web-neovim and backs up an
 earlier web-neovim configuration before replacing it. Other Neovim configs are
-left in place. Set your terminal font to JetBrainsMono Nerd Font for icons.
+left in place. The installer includes DejaVuSansM Nerd Font Mono. Select it in your terminal
+for Persian glyphs and icons.
 If macOS blocks the unsigned installer, use the standard macOS controls for
 opening an application from an identified source.
