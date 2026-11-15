@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const MarkdownIt = require('markdown-it');
+const { createHash } = require('node:crypto');
 const release = require('../installer/manifest.cjs');
 
 const out = path.join(__dirname, 'dist');
@@ -9,6 +10,9 @@ const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '
 const stamp = `<p class="release-stamp">movim v${release.version} · ${release.commit ? release.commit.slice(0, 7) : 'local build'}</p>`;
 const logo = '<span class="logo-symbol" aria-hidden="true">m<span>_</span></span>movim<span class="logo-dot">.</span>';
 const slug = text => text.toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'section';
+const assets = Object.fromEntries(['style.css', 'site.js', 'search.js', 'favicon.svg'].map(file => [file, createHash('sha256').update(fs.readFileSync(path.join(__dirname, file))).digest('hex').slice(0, 12)]));
+const searchVersion = createHash('sha256').update(fs.readdirSync(docsDir).filter(file => file.endsWith('.md')).sort().map(file => fs.readFileSync(path.join(docsDir, file), 'utf8')).join('\n')).digest('hex').slice(0, 12);
+const cacheAssets = html => html.replace(/\b(href|src)="((?:\.\.\/)?)((?:style\.css|site\.js|search\.js|favicon\.svg))"/g, (match, attribute, prefix, file) => `${attribute}="${prefix}${file}?v=${assets[file]}"`).replace(/<body\b/, `<body data-search-version="${searchVersion}"`);
 fs.rmSync(out, { recursive: true, force: true });
 for (const dir of ['docs', 'docs-en']) fs.mkdirSync(path.join(out, dir), { recursive: true });
 for (const file of ['style.css', 'site.js', 'search.js', 'favicon.svg']) fs.copyFileSync(path.join(__dirname, file), path.join(out, file));
@@ -87,11 +91,11 @@ function documentPage(page, fa) {
 <main class="docs-content" id="main"><div class="docs-breadcrumb"><a href="../index.html">${homeLabel}</a><span>/</span><a href="README.html">${fa ? 'مستندات' : 'Docs'}</a><span>/</span><span>${escape(page.shortTitle || page.title)}</span></div><div class="doc-meta">${stamp}<span>${fa ? `${minutes.toLocaleString('fa')} دقیقه مطالعه · فارسی` : `${minutes} min read · English guide`}</span></div><article class="markdown">${body}</article>${pagination}<footer class="docs-footer"><span>${fa ? 'مستندات همراه نسخهٔ اصلی به‌روز می‌شوند.' : 'Documentation ships with the configuration.'}</span><a href="https://github.com/moeinparvizi/movim">GitHub ↗</a></footer></main><aside class="docs-toc" aria-label="${fa ? 'در این صفحه' : 'On this page'}"><p>${fa ? 'در این صفحه' : 'On this page'}</p><nav>${toc}</nav></aside></div>${searchDialog(fa)}<script src="../search.js" defer></script><script src="../site.js" defer></script></body></html>`;
 }
 
-for (const page of pages) fs.writeFileSync(path.join(out, 'docs', page.html), documentPage(page, true));
+for (const page of pages) fs.writeFileSync(path.join(out, 'docs', page.html), cacheAssets(documentPage(page, true)));
 fs.writeFileSync(path.join(out, 'docs/index.html'), '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=README.html"><title>مستندات movim</title></head><body><a href="README.html">راهنمای کامل فارسی movim</a></body></html>');
 const englishSource = fs.readFileSync(path.join(__dirname, 'docs-en/README.md'), 'utf8').replace(/^\uFEFF/, '');
-fs.writeFileSync(path.join(out, 'docs-en/README.html'), documentPage({ source: englishSource, title: 'movim documentation', file: 'English', shortTitle: 'English guide' }, false));
+fs.writeFileSync(path.join(out, 'docs-en/README.html'), cacheAssets(documentPage({ source: englishSource, title: 'movim documentation', file: 'English', shortTitle: 'English guide' }, false)));
 let home = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8').replace('<!-- release-stamp -->', stamp).replace('<!-- version -->', release.version).replace('<!-- doc-count -->', pages.length).replace('<!-- search-dialog -->', searchDialog(true));
 home = home.replace('<script src="site.js"', '<script src="search.js" defer></script><script src="site.js"');
-fs.writeFileSync(path.join(out, 'index.html'), home);
+fs.writeFileSync(path.join(out, 'index.html'), cacheAssets(home));
 console.log(`Built ${pages.length} Persian documentation pages, full-text search, English guide and movim v${release.version}.`);

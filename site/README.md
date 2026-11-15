@@ -9,3 +9,5 @@ Run `npm ci && npm test` here. Tests rebuild `dist/` and validate all documentat
 `.github/workflows/release.yml` builds and checks the site on each push to `main` and deploys it only after publishing matching platform installers. Every page carries the version and source commit from `lua/config/version.lua` and `installer/manifest.cjs`. The former standalone Pages workflow is manual-only.
 
 Downloads retain direct latest-release links when the GitHub API is unavailable. When the lookup succeeds, links are matched to `movim-Setup.exe`, `movim-macOS.zip` and `movim-linux.tar.gz`; missing assets lead to the release page. Do not publish an archive until its contents have been verified.
+
+Generated pages reference stylesheets and scripts with SHA-256 content identifiers. The full-text index has its own identifier derived from every Markdown source. Preserve those URLs so a cached script or index cannot override a newly deployed page's language routing.

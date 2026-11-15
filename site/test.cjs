@@ -20,6 +20,10 @@ const parsed = new Map(documents.map(file => [file, parseHTML(load(file)).docume
 for (const [file, document] of parsed) {
   assert.ok(document.querySelector('.release-stamp').textContent.includes(`movim v${release.version}`), `${file}: shared version`);
   const ids = [...document.querySelectorAll('[id]')].map(node => node.id);
+  assert.match(document.body.dataset.searchVersion, /^[a-f0-9]{12}$/, `${file}: versioned search index`);
+  for (const asset of document.querySelectorAll('script[src], link[rel="stylesheet"]')) {
+    assert.match(asset.getAttribute('src') || asset.getAttribute('href'), /\?v=[a-f0-9]{12}$/, `${file}: content-hashed assets prevent mixing old scripts with new pages`);
+  }
   assert.equal(ids.length, new Set(ids).size, `${file}: duplicate id`);
   for (const link of document.querySelectorAll('a[href], script[src], link[href]')) {
     const href = link.getAttribute('href') || link.getAttribute('src');
@@ -71,7 +75,7 @@ async function runtime({ file = 'index.html', saved, offline = false, assets = t
   Object.defineProperty(document, 'activeElement', { get: () => active });
   for (const node of document.querySelectorAll('button,input,a')) node.focus = () => { active = node; };
   const fetch = async url => {
-    if (url.endsWith('search.json')) { if (searchOffline) throw new Error('Search network unavailable'); return { ok: true, json: async () => index }; }
+    if (url.includes('search.json?')) { if (searchOffline) throw new Error('Search network unavailable'); return { ok: true, json: async () => index }; }
     if (offline) throw new Error('Release network unavailable');
     return { ok: true, json: async () => ({ tag_name: 'v9.8.7', assets: assets ? ['movim-Setup.exe', 'movim-macOS.zip', 'movim-linux.tar.gz'].map(name => ({ name, browser_download_url: `https://github.com/example/releases/download/v9.8.7/${name}` })) : [] }) };
   };

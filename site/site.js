@@ -137,7 +137,7 @@
     renderSearch();
     if (!loading && !pages) {
       searchFailed = false;
-      loading = fetch(searchRoot + 'search.json').then(response => { if (!response.ok) throw new Error('Search unavailable'); return response.json(); }).then(data => { pages = data; }).catch(() => { searchFailed = true; }).finally(() => { loading = null; renderSearch(); });
+      loading = fetch(searchRoot + 'search.json?v=' + encodeURIComponent(document.body.dataset.searchVersion)).then(response => { if (!response.ok) throw new Error('Search unavailable'); return response.json(); }).then(data => { pages = data; }).catch(() => { searchFailed = true; }).finally(() => { loading = null; renderSearch(); });
     }
     await loading;
   }

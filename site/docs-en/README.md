@@ -8,6 +8,8 @@ The website opens in Persian by default. Choose **EN** for English; the preferen
 
 Use `Ctrl+K`, `Cmd+K`, or `/` to search the full Persian handbook from either language. Search results remain in Persian and include content snippets and filenames. Arrow keys move between results, Enter opens a result, and Escape closes search. On mobile, use the search button and expandable chapter index. Document pages include heading permalinks, an on-page contents list, previous/next chapters, scrollable tables and code-copy buttons. The homepage has keyboard-accessible code, terminal and Git preview tabs. Webfonts are hosted with the site and respect reduced-motion preferences.
 
+Stylesheets, scripts and the search index use content identifiers in their URLs so a new page does not reuse an incompatible cached script. Reload an already-open page after a deployment.
+
 ## Installation
 
 Download the latest files from the [movim website](../index.html#download) or [GitHub Releases](https://github.com/moeinparvizi/movim/releases).
