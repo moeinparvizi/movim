@@ -51,7 +51,15 @@ jobs:
         with:
           node-version: '22'
       - run: choco install innosetup --no-progress -y
+      - uses: actions/cache@v4
+        id: runtime-cache
+        with:
+          key: movim-runtime-v1-windows-${{ hashFiles('neovim/lazy-lock.json') }}
+          path: |
+            .tools
+            .isolated
       - name: Prepare portable runtime and pinned plugins
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
         shell: powershell
         run: ./neovim/installer/prepare-windows.ps1
       - name: Build Windows and macOS packages from the same checkout

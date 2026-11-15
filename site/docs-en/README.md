@@ -102,7 +102,10 @@ For Windows Terminal 1.18, the legacy DirectWrite renderer can be selected with 
 | `Space ca` / `Space cf` | Code action / format file |
 | `Space gd` / `Space gq` | Open / close diff view |
 | `Space st` | Find project TODOs |
-| `Space qS` / `Space qL` | Save / restore session |
+| `Space qs` / `Space ql` | Restore this project's session / the last session |
+| `Space qd` | Stop saving the current session on exit |
+
+Persistence saves sessions on exit. The mappings use lowercase `s` and `l`; `Space qS` and `Space qL` are not configured. Use `Space wh/wj/wk/wl` to move a window to the left/bottom/top/right. `Space fb` lists buffers, `Ctrl+^` switches to the alternate file, and `Space k l` lists movim bookmarks. `:Telescope keymaps` shows the mappings active in the current buffer, including mappings loaded by plugins.
 
 ## Running scripts and tests
 

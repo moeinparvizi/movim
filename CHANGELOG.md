@@ -2,6 +2,8 @@
 
 ## 1.1
 
+- Correct the documented session, window movement, alternate-file and bookmark shortcuts to match the configuration.
+
 - Resolve configuration paths containing spaces and isolate the Windows application name from inherited environment settings.
 
 - Add a readable built-in startup palette on every platform. Restore a saved theme immediately and fall back safely when it is missing, without erasing the preference.
