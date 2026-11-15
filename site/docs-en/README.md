@@ -2,6 +2,12 @@
 
 movim is a customizable Neovim workspace for working with code in a terminal. This guide covers installation and everyday features.
 
+## Website and documentation languages
+
+The website opens in Persian by default. Choose **EN** for English; the preference is saved for later visits. Documentation links follow the selected language. The **فارسی** link in this guide opens the complete Persian handbook: 20 chapters and five practical references, all preserved alongside the chapter index. The Persian handbook includes the detailed tutorials rather than only this English overview.
+
+Use `Ctrl+K`, `Cmd+K`, or `/` to search the full Persian handbook from either language. Search results remain in Persian and include content snippets and filenames. Arrow keys move between results, Enter opens a result, and Escape closes search. On mobile, use the search button and expandable chapter index. Document pages include heading permalinks, an on-page contents list, previous/next chapters, scrollable tables and code-copy buttons. The homepage has keyboard-accessible code, terminal and Git preview tabs. Webfonts are hosted with the site and respect reduced-motion preferences.
+
 ## Installation
 
 Download the latest files from the [movim website](../index.html#download) or [GitHub Releases](https://github.com/moeinparvizi/movim/releases).

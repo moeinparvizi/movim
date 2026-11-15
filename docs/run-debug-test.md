@@ -1,17 +1,48 @@
-# Run, debug and test
+# راهنمای عملی اجرا، تست و دیباگ
 
-Start from your project's directory or pass it to `start-webstorm.cmd`. Nothing runs automatically on project open.
+movim را از پوشهٔ پروژه اجرا کنید یا مسیر پروژه را به `movim` و در ویندوز به `start-webstorm.cmd` بدهید. باز کردن پروژه به‌تنهایی هیچ اسکریپتی اجرا نمی‌کند.
 
-## Scripts and output
+## اسکریپت‌ها و خروجی
 
-Space rr selects a package.json script; Space rd runs dev/start/serve, Space rs stops it. The runner selects pnpm, yarn, bun or npm by lockfile. Its terminal holds process output; compiler output is not automatically parsed into quickfix. Space th opens another terminal; Ctrl+\ Ctrl+N exits Terminal mode.
+با `Space rr` یک اسکریپت از `package.json` انتخاب کنید. `Space rd` اسکریپت dev، start یا serve را اجرا می‌کند و `Space rs` آن را متوقف می‌کند. رانر بر اساس lockfile، مدیر بستهٔ pnpm، yarn، bun یا npm را انتخاب می‌کند. خروجی در ترمینال همان پردازش باقی می‌ماند و به‌طور خودکار به quickfix تبدیل نمی‌شود.
 
-## Jest and Vitest
+با `Space th` ترمینال دیگری باز کنید. برای خروج از حالت Terminal، `Ctrl+\` و سپس `Ctrl+N` را بزنید. [پنل تسک‌ها](17-tasks.md) برای فایل‌های tasks و دستورهای دلخواه نیز در دسترس است.
 
-Install the test framework in the project, and install the relevant Treesitter parsers with `:TSInstall javascript typescript tsx`. Space tn runs the nearest test, Space tf the current file, Space tT the current working directory, Space tS opens results, Space to opens output, and Space tq stops a run. Adapter selection checks the nearest package.json; a package declaring both chooses Vitest. In a monorepo, declare the framework in the package containing the tests or adjust the adapter root logic. Parameterized test discovery depends on adapter support.
+## تست با Jest و Vitest
 
-## Node and browser debugging
+فریم‌ورک تست باید در پروژه نصب شده باشد. پارسرهای مرتبط را نیز نصب کنید:
 
-Mason's js-debug-adapter and Node must be installed. Space db toggles a breakpoint, Space dB sets a conditional breakpoint, F9 resumes, F8 steps over, F7 steps in, Shift+F8 steps out (Space db and F5/F10/F11 are fallbacks), Space du toggles scopes, watches and stack UI, Space de evaluates an expression and Space dx terminates. Select **Launch current file** for executable JavaScript, or start Node with `--inspect=9229` and select **Attach to :9229**. TypeScript requires an appropriate runtime or compiled JavaScript and source maps; debugging a raw TS file is not universally supported.
+```vim
+:TSInstall javascript typescript tsx
+```
 
-For browser code, start the development server yourself, choose **Launch Chrome**, and supply its URL. The adapter needs Chrome and project source maps. Browser launch, source map accuracy and interactive stepping have not been verified in this environment. Breakpoint, variable, console and browser behavior depend on the program and runtime; use the DAP UI to inspect the session.
+| میان‌بر | کار |
+|---|---|
+| `Space tn` | اجرای تست نزدیک به کرسر |
+| `Space tf` | اجرای تست‌های فایل فعلی |
+| `Space tT` | اجرای تست‌های پوشهٔ کاری فعلی |
+| `Space tS` | نمایش پنل نتیجه‌ها |
+| `Space to` | نمایش خروجی تست |
+| `Space tq` | توقف اجرا |
+
+انتخاب آداپتر از نزدیک‌ترین `package.json` انجام می‌شود. اگر هر دو فریم‌ورک در همان بسته تعریف شده باشند، Vitest انتخاب می‌شود. در monorepo، وابستگی تست را در بسته‌ای که تست‌ها در آن قرار دارند تعریف کنید یا منطق ریشهٔ آداپتر را تنظیم کنید. پیدا کردن تست‌های پارامتری به پشتیبانی آداپتر وابسته است.
+
+## دیباگ Node
+
+Node و ابزار `js-debug-adapter` از Mason باید نصب باشند. `Space db` نقطهٔ توقف را تغییر می‌دهد و `Space dB` نقطهٔ توقف شرطی می‌گذارد. `F9` ادامه می‌دهد، `F8` به خط بعد می‌رود، `F7` وارد تابع می‌شود و `Shift+F8` از تابع خارج می‌شود. جایگزین‌ها `F5`، `F10`، `F11` و `Shift+F11` هستند.
+
+`Space du` رابط متغیرها، watch و stack را باز می‌کند؛ `Space de` یک عبارت را ارزیابی می‌کند و `Space dx` نشست دیباگ را پایان می‌دهد.
+
+برای JavaScript اجرایی، **Launch current file** را انتخاب کنید. برای اتصال به پردازش فعال، ابتدا آن را اجرا کنید:
+
+```sh
+node --inspect=9229 app.js
+```
+
+سپس **Attach to :9229** را انتخاب کنید. برای TypeScript، runtime مناسب یا JavaScript کامپایل‌شده همراه source map لازم است؛ اجرای مستقیم همهٔ فایل‌های TS تضمین‌شده نیست.
+
+## دیباگ مرورگر
+
+سرور توسعه را خودتان اجرا کنید، **Launch Chrome** را انتخاب کنید و URL پروژه را وارد کنید. Chrome و source mapهای پروژه لازم‌اند. اجرای Chrome، دقت source map و قدم‌زدن تعاملی در مرورگر در این محیط تأیید نشده است. رفتار breakpoint، متغیرها و کنسول به برنامه و runtime بستگی دارد؛ برای بررسی نشست از رابط DAP استفاده کنید.
+
+برای مراحل پایه [فصل اجرا و دیباگ](09-run-debug.md) و برای مشکلات ابزارها [عیب‌یابی](16-troubleshooting.md) را ببینید.

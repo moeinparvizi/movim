@@ -2,6 +2,9 @@
 
 ## 1.1
 
+- Redesign the website around a terminal workspace, with responsive editor previews and self-hosted Persian and code fonts.
+- Restore direct access to all twenty Persian chapters and five practical references, translate the remaining references, and add keyboard-driven full-text search, heading navigation and code copying. Persian is the homepage default; English remains an explicit choice.
+
 - Correct the documented session, window movement, alternate-file and bookmark shortcuts to match the configuration.
 
 - Resolve configuration paths containing spaces and isolate the Windows application name from inherited environment settings.
