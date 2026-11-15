@@ -1,0 +1,7 @@
+{
+  "name": "movim-ai-pi-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Pinned, isolated Pi RPC runtime for movim AI Panel",
+  "dependencies": { "@mariozechner/pi-coding-agent": "0.73.1" }
+}

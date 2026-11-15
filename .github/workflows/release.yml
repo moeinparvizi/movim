@@ -77,12 +77,43 @@ jobs:
           $env:NVIM_APPNAME = 'inherited-other-app'
           & "$target/neovim/start-webstorm.ps1" --headless -l "$env:GITHUB_WORKSPACE/neovim/tests/startup.lua"
           if ($LASTEXITCODE -ne 0) { throw 'Clean startup failed.' }
+      - name: Install pinned Pi and validate AI Panel
+        shell: powershell
+        run: |
+          Push-Location neovim/ai/runtime
+          npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Pi install failed.' }
+          Pop-Location
+          Push-Location neovim
+          & ../.tools/nvim-win64/bin/nvim.exe --headless -u NONE -l ai/tests/acceptance.lua
+          if ($LASTEXITCODE -ne 0) { throw 'AI acceptance failed.' }
+          node ai/tests/rpc.cjs ../.tools/nvim-win64/bin/nvim.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Pi RPC integration failed.' }
+          Pop-Location
+      - name: Build and validate separate AI installers
+        shell: powershell
+        run: |
+          ./neovim/ai/build-installers.ps1
+          $target = Join-Path $env:RUNNER_TEMP 'movim AI clean'
+          $p = Start-Process ./neovim/ai/dist/movim-AI-Setup.exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=""',('/DIR="' + $target + '"')) -WindowStyle Hidden -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "AI installation failed: $($p.ExitCode)" }
+          node neovim/installer/verify-package.cjs "$target/neovim"
+          if ($LASTEXITCODE -ne 0) { throw 'AI base verification failed.' }
+          node neovim/ai/verify.cjs "$target/neovim/ai"
+          if ($LASTEXITCODE -ne 0) { throw 'AI source verification failed.' }
+          & "$target/neovim/start-webstorm.ps1" --headless -l "$env:GITHUB_WORKSPACE/neovim/ai/tests/installed.lua"
+          if ($LASTEXITCODE -ne 0) { throw 'AI installed startup failed.' }
+          Expand-Archive ./neovim/ai/dist/movim-AI-macOS.zip "$env:RUNNER_TEMP/ai-mac-package"
+          node neovim/ai/verify.cjs "$env:RUNNER_TEMP/ai-mac-package/movim-macOS/config/ai"
+          if ($LASTEXITCODE -ne 0) { throw 'AI Mac verification failed.' }
       - uses: actions/upload-artifact@v4
         with:
           name: installers
           path: |
             movim-Setup.exe
             movim-macOS.zip
+            neovim/ai/dist/movim-AI-Setup.exe
+            neovim/ai/dist/movim-AI-macOS.zip
   unix:
     needs: version
     strategy:
@@ -114,6 +145,13 @@ jobs:
           nvim --headless -u NONE -l tests/theme.lua
           bash -n installer/macos/Install.command
           bash -n installer/linux/Install.sh
+          bash -n ai/installer/Install.command
+      - name: Validate AI Panel and pinned Pi RPC natively
+        shell: bash
+        run: |
+          (cd ai/runtime && npm ci --ignore-scripts --no-audit --no-fund)
+          nvim --headless -u NONE -l ai/tests/acceptance.lua
+          node ai/tests/rpc.cjs "$(command -v nvim)"
       - name: Build and verify Linux archive
         if: runner.os == 'Linux'
         shell: bash
@@ -165,9 +203,11 @@ jobs:
           COMMIT: ${{ needs.version.outputs.commit }}
         run: |
           cd assets
+          # upload-artifact preserves common-root directories for AI packages.
+          find . -mindepth 2 -type f -name 'movim-*' -exec mv {} . \;
           sha256sum movim-* > SHA256SUMS
           printf 'Source: %s\n\nAll platform packages and documentation were built from this commit. See the English guide and CHANGELOG.md.\n' "$COMMIT" > notes.md
-          gh release create "v$VERSION" movim-Setup.exe movim-macOS.zip movim-linux.tar.gz SHA256SUMS --target "$COMMIT" --title "movim v$VERSION" --notes-file notes.md --latest
+          gh release create "v$VERSION" movim-Setup.exe movim-macOS.zip movim-linux.tar.gz movim-AI-Setup.exe movim-AI-macOS.zip SHA256SUMS --target "$COMMIT" --title "movim v$VERSION" --notes-file notes.md --latest
       - uses: actions/download-artifact@v4
         with:
           name: website

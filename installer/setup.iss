@@ -4,7 +4,14 @@
 #ifndef ProductVersion
 #error ProductVersion must be supplied by build-installers.ps1
 #endif
+#ifdef AiBuild
+#define ProductName "movim AI"
+#define ProductDir "movim-ai"
+#define ProductId "movim-AI-2026"
+#define OutputName "movim-AI-Setup"
+#else
 #define ProductName "movim"
+#define ProductDir "movim"
 #ifdef TestBuild
 #define ProductId "WebNeovim-InstallerTest-2026"
 #define OutputName "movim-Setup-TEST"
@@ -12,17 +19,22 @@
 #define ProductId "WebNeovim-Portable-2026"
 #define OutputName "movim-Setup"
 #endif
+#endif
 [Setup]
 AppId={#ProductId}
 AppName={#ProductName}
 AppVersion={#ProductVersion}
 AppPublisher=movim
-DefaultDirName={localappdata}\Programs\movim
-DefaultGroupName=movim
+DefaultDirName={localappdata}\Programs\{#ProductDir}
+DefaultGroupName={#ProductName}
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+#ifdef AiBuild
+OutputDir=..\ai\dist
+#else
 OutputDir=..\..
+#endif
 OutputBaseFilename={#OutputName}
 Compression=lzma2/fast
 SolidCompression=no
@@ -32,10 +44,20 @@ DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\.tools\nvim-win64\bin\nvim.exe
 
 [Tasks]
+#ifndef AiBuild
 Name: addpath; Description: "Add movim to the current user's PATH (run movim or nvim in a new PowerShell window)"; Flags: checkedonce
+#endif
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 
 [Files]
+#ifdef AiBuild
+Source: "{#Workspace}\neovim\ai\installer\movim-ai.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\ai\lua\*"; DestDir: "{app}\neovim\ai\lua"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Workspace}\neovim\ai\README.md"; DestDir: "{app}\neovim\ai"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\ai\runtime\package*.json"; DestDir: "{app}\neovim\ai\runtime"; Flags: ignoreversion
+Source: "{#Workspace}\neovim\ai\dist\pi-runtime.tar"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall
+Source: "{#Workspace}\neovim\ai\dist\ai-release.json"; DestDir: "{app}\neovim\ai"; Flags: ignoreversion
+#endif
 Source: "movim.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "nvim.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "start-webstorm.cmd"; DestDir: "{app}"; Flags: ignoreversion
@@ -72,8 +94,8 @@ Source: "WINDOWS-INSTALL.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 Source: "{#Workspace}\.tools\installer-runtime.tar"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall
 
 [Icons]
-Name: "{group}\movim"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"
-Name: "{autodesktop}\movim"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"; Tasks: desktopicon
+Name: "{group}\{#ProductName}"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"
+Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\movim.cmd"; WorkingDir: "{userdocs}"; Tasks: desktopicon
 
 [Code]
 const EnvKey = 'Environment';
@@ -97,6 +119,11 @@ begin
     if not Exec(ExpandConstant('{sys}\tar.exe'), '-xf "' + ExpandConstant('{tmp}\installer-runtime.tar') + '" -C "' + ExpandConstant('{app}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       RaiseException('Could not start Windows tar to extract language tools.');
     if ResultCode <> 0 then RaiseException('Could not extract language tools; tar exit code: ' + IntToStr(ResultCode));
+#ifdef AiBuild
+    if not Exec(ExpandConstant('{sys}\tar.exe'), '-xf "' + ExpandConstant('{tmp}\pi-runtime.tar') + '" -C "' + ExpandConstant('{app}\neovim\ai\runtime') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      RaiseException('Could not extract the pinned Pi runtime.');
+    if ResultCode <> 0 then RaiseException('Pi runtime extraction failed: ' + IntToStr(ResultCode));
+#endif
   end;
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('addpath') then begin
     AppPath := ExpandConstant('{app}');

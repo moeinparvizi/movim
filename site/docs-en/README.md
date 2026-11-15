@@ -128,6 +128,18 @@ Install Node and Mason's `js-debug-adapter`. Use `Space db` to toggle a breakpoi
 For browser debugging, start the development server yourself, select **Launch Chrome**, and provide its URL. Chrome and project source maps are required. Browser launch and interactive stepping have not been verified in this environment.
 
 
+## Optional movim AI edition
+
+The separate **movim AI** Windows and macOS installers add an AI Panel. Download `movim-AI-Setup.exe` or `movim-AI-macOS.zip` from the same GitHub release; source and installer instructions are in the repository's `ai/` directory. Windows installs to `Programs/movim-ai`; macOS uses `~/.config/movim-ai` and `~/.local/bin/movim-ai`, keeping the regular edition independent.
+
+Use `:AIConfigure` with your provider's endpoint, exact model ID, verified context size and an API-key environment-variable name. No credentials or model subscription are bundled. GapCode/Luna availability requires a compatible provider endpoint and your own access; the independent Luna code review is not a live-provider integration test.
+
+`Space aa` toggles the panel; Visual `Space ae` asks for a selection change in a new independent Pi tab; `Space af` attaches the current unsaved buffer. Use `:AIFile` to choose another file, `:AINew`, `:AISelect`, `:AIRename`, `:AICloseTab`, and `:AICancel` to manage chats. `:AIMove` and `:AIResize` place and size the panel. Mappings are configurable. Hiding the panel keeps conversations; closing a busy tab explicitly offers cancellation. Conversations are in-memory until editor exit.
+
+The full buffer snapshot and exact UTF-8 selection are sent as data. Only a validated response matching its request and snapshot may be reviewed with `:AIPreview`, applied with `:AIApply`, rejected with `:AIReject`, or refined with `:AIRevise`. Apply changes only the captured selection with one Undo and never saves the file. Any intervening buffer edit blocks Apply; `:AIRerun` returns to the source for explicit reselection. Character and line selections work; block selections are refused. Stale attachments require `:AIRefresh`; oversized context stops without truncation. Common secret-file paths are denied by a configurable path policy.
+
+Pi 0.73.1 is pinned with a lockfile and uses its official RPC protocol. Every tab runs a separate process in an empty directory with tools, extensions, skills, templates and project instruction discovery disabled. No project commands or tests run automatically. Acceptance tests use a fake adapter; integration tests use the actual pinned Pi runtime against a synthetic localhost HTTP provider. Full interactive macOS installation remains unverified on this Windows workstation; native headless checks run in CI. See the [Persian AI guide](../docs/AI-PANEL.html) for the complete workflow.
+
 ## Release consistency and recovery
 
 The editor interface is English, including the dashboard, unnamed-file label, input indicator (`FA`) and command descriptions. Persian input and display tools remain available.
