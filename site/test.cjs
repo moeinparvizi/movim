@@ -21,11 +21,17 @@ for (const [file, document] of parsed) {
   assert.ok(document.querySelector('.release-stamp').textContent.includes(`movim v${release.version}`), `${file}: shared version`);
   const ids = [...document.querySelectorAll('[id]')].map(node => node.id);
   assert.match(document.body.dataset.searchVersion, /^[a-f0-9]{12}$/, `${file}: versioned search index`);
-  for (const asset of document.querySelectorAll('script[src], link[rel="stylesheet"]')) {
+  const logos = document.querySelectorAll('.logo img');
+  assert.equal(logos.length, file === 'index.html' ? 2 : 1, `${file}: official logo in every brand link`);
+  for (const logo of logos) {
+    assert.equal(logo.getAttribute('alt'), 'movim', `${file}: accessible logo`);
+    assert.match(logo.getAttribute('src'), /logo\.png\?v=[a-f0-9]{12}$/, `${file}: versioned official logo`);
+  }
+  for (const asset of document.querySelectorAll('script[src], link[rel="stylesheet"], link[rel="icon"], .logo img')) {
     assert.match(asset.getAttribute('src') || asset.getAttribute('href'), /\?v=[a-f0-9]{12}$/, `${file}: content-hashed assets prevent mixing old scripts with new pages`);
   }
   assert.equal(ids.length, new Set(ids).size, `${file}: duplicate id`);
-  for (const link of document.querySelectorAll('a[href], script[src], link[href]')) {
+  for (const link of document.querySelectorAll('a[href], script[src], link[href], img[src]')) {
     const href = link.getAttribute('href') || link.getAttribute('src');
     if (/^(?:[a-z]+:|\/\/)/i.test(href)) continue;
     const url = new URL(href, `https://example.test/movim/${file}`);
