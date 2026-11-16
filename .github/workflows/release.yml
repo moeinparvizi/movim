@@ -77,6 +77,32 @@ jobs:
           $env:NVIM_APPNAME = 'inherited-other-app'
           & "$target/neovim/start-webstorm.ps1" --headless -l "$env:GITHUB_WORKSPACE/neovim/tests/startup.lua"
           if ($LASTEXITCODE -ne 0) { throw 'Clean startup failed.' }
+      - name: Validate in-place Windows upgrade preserves user state
+        shell: powershell
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'movim clean'
+          $user = Join-Path $target 'neovim/user.lua'
+          $state = Join-Path $target '.isolated/state/nvim/update-preservation.json'
+          New-Item -ItemType Directory -Force (Split-Path $state) | Out-Null
+          Set-Content -LiteralPath $user -Value 'vim.g.movim_check_updates = false' -Encoding ASCII
+          Set-Content -LiteralPath $state -Value '{"draft":"keep my workspace"}' -Encoding ASCII
+          $expectedUser = Get-Content -LiteralPath $user -Raw
+          $expectedState = Get-Content -LiteralPath $state -Raw
+          $args = @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=""',('/DIR="' + $target + '"'))
+          $p = Start-Process ./movim-Setup.exe -ArgumentList $args -WindowStyle Hidden -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'In-place upgrade failed.' }
+          if ((Get-Content -LiteralPath $user -Raw) -ne $expectedUser) { throw 'Personal configuration changed.' }
+          if ((Get-Content -LiteralPath $state -Raw) -ne $expectedState) { throw 'Workspace state changed.' }
+          $init = Join-Path $target 'neovim/init.lua'
+          $original = [IO.File]::ReadAllBytes($init)
+          try {
+            Set-Content -LiteralPath $init -Value '-- personal distribution edit' -Encoding ASCII
+            $p = Start-Process ./movim-Setup.exe -ArgumentList $args -WindowStyle Hidden -Wait -PassThru
+            if ($p.ExitCode -eq 0) { throw 'Installer did not reject a local distribution edit.' }
+            if ((Get-Content -LiteralPath $init -Raw).Trim() -ne '-- personal distribution edit') { throw 'Installer overwrote a local edit.' }
+          } finally { [IO.File]::WriteAllBytes($init, $original) }
+          node neovim/installer/verify-package.cjs "$target/neovim"
+          if ($LASTEXITCODE -ne 0) { throw 'Post-upgrade package validation failed.' }
       - name: Install pinned Pi and validate AI Panel
         shell: powershell
         run: |

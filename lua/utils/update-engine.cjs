@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
 const zlib = require('node:zlib');
-const { createHash } = require('node:crypto');
+const { createHash, randomUUID } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const api = 'https://api.github.com/repos/moeinparvizi/movim/releases/latest';
 const digest = data => createHash('sha256').update(data).digest('hex');
@@ -11,8 +11,11 @@ const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const exists = file => fs.existsSync(file);
 const atomic = (file, data) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file + '.tmp', data, { flush: true });
-  fs.renameSync(file + '.tmp', file);
+  const temporary = file + '.movim-tmp-' + randomUUID();
+  try {
+    fs.writeFileSync(temporary, data, { flush: true, flag: 'wx' });
+    fs.renameSync(temporary, file);
+  } finally { if (exists(temporary)) fs.unlinkSync(temporary); }
 };
 const json = (file, data) => atomic(file, JSON.stringify(data, null, 2) + '\n');
 function safeName(name) {
@@ -243,6 +246,13 @@ async function fromPackage(root, source) {
   return apply(root);
 }
 function rollback(root, dir, journal) {
+  if (!journal || !/^backups\/\d+$/.test(journal.backup) || !/^stage-\d+$/.test(journal.stage) || !Array.isArray(journal.entries)) throw Error('Invalid recovery journal. Restore the previous files from .movim-update/backups before retrying.');
+  const seen = new Set();
+  for (const entry of journal.entries) {
+    safeName(entry.name);
+    if (typeof entry.existed !== 'boolean' || seen.has(entry.name) || !/^(release\.json|ai\/ai-release\.json|init\.lua|lazy-lock\.json|README\.md|LICENSE|CHANGELOG\.md|site\/docs-en\/README\.md|(lua|colors|keymap|docs|fonts)\/.+|ai\/(README\.md|runtime\/package(-lock)?\.json|lua\/.+))$/.test(entry.name)) throw Error('Invalid recovery entry');
+    seen.add(entry.name);
+  }
   for (const entry of [...journal.entries].reverse()) {
     const dest = target(root, entry.name), saved = target(path.join(dir, journal.backup), entry.name);
     if (entry.existed) { if (exists(saved)) atomic(dest, fs.readFileSync(saved)); }
@@ -257,7 +267,8 @@ function rollback(root, dir, journal) {
     if (exists(saved)) { fs.rmSync(dest, { recursive: true, force: true }); fs.renameSync(saved, dest); }
     else if (!journal.hadRuntime) fs.rmSync(dest, { recursive: true, force: true });
   }
-  if (exists(path.join(dir, 'sync.json'))) fs.unlinkSync(path.join(dir, 'sync.json'));
+  if (journal.previousSync) atomic(path.join(dir, 'sync.json'), Buffer.from(journal.previousSync, 'base64'));
+  else if (exists(path.join(dir, 'sync.json'))) fs.unlinkSync(path.join(dir, 'sync.json'));
   fs.unlinkSync(path.join(dir, 'transaction.json'));
 }
 async function apply(root, hooks = {}) {
@@ -284,7 +295,8 @@ async function apply(root, hooks = {}) {
     packageFiles(archiveMap, info.version, exists(aiFile));
     const old = preflight(root, staged);
     const backup = 'backups/' + Date.now();
-    const journal = { backup, stage: info.stage, entries: [], runtime: info.runtime, hadRuntime: exists(target(root, 'ai/runtime/node_modules')) };
+    const journal = { backup, stage: info.stage, entries: [], runtime: info.runtime, hadRuntime: exists(target(root, 'ai/runtime/node_modules')),
+      previousSync: exists(path.join(dir, 'sync.json')) ? fs.readFileSync(path.join(dir, 'sync.json')).toString('base64') : null };
     fs.mkdirSync(target(dir, backup), { recursive: true });
     // Back up every affected file before publishing a write-ahead journal.
     for (const name of new Set([...Object.keys(old), ...staged.keys()])) {

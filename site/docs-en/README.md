@@ -81,6 +81,8 @@ movim also applies a display-only correction to common Persian and Arabic runs o
 
 ## Updates
 
+Personal temporary files beside the configuration are preserved too: updates use unique temporary names. Invalid recovery metadata stops replacement and leaves backups available for inspection.
+
 For AI runtime upgrades, the Node.js installation must include npm on Windows, macOS and Linux.
 
 Files are checked both when downloaded and immediately before applying, so edits made while an update is waiting are protected too. Installer upgrade checks run before copying files.

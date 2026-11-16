@@ -50,6 +50,7 @@ function ai(values) {
 }
 (async () => {
   const dir = install('regular', before);
+  write(path.join(dir, 'init.lua.tmp'), 'personal temporary file');
   const state = path.join(scratch, 'state/workspace.json'); write(state, '{"draft":"unsaved"}');
   assert.equal((await prepare(dir)).status, 'ready');
   assert.deepEqual(fs.readFileSync(path.join(dir, 'init.lua')), before['init.lua'], 'download must not change running config');
@@ -59,6 +60,7 @@ function ai(values) {
   assert.equal(fs.existsSync(path.join(dir, 'lua/obsolete.lua')), false);
   assert.equal(fs.readFileSync(path.join(dir, 'user.lua'), 'utf8'), '-- my preferences');
   assert.equal(fs.readFileSync(path.join(dir, 'personal/note.txt'), 'utf8'), 'personal');
+  assert.equal(fs.readFileSync(path.join(dir, 'init.lua.tmp'), 'utf8'), 'personal temporary file');
   assert.equal(fs.readFileSync(state, 'utf8'), '{"draft":"unsaved"}');
   assert.deepEqual(fs.readFileSync(path.join(result.backup, 'init.lua')), before['init.lua']);
   assert.equal((await prepare(dir)).status, 'current');
@@ -87,6 +89,12 @@ function ai(values) {
   for (const [n, b] of Object.entries(before)) assert.deepEqual(fs.readFileSync(path.join(killed, n)), b);
   assert.equal((await engine.apply(killed)).status, 'installed');
   console.log('PASS recovery after real process interruption');
+
+  const brokenJournal = install('bad-journal', before);
+  write(path.join(brokenJournal, '.movim-update/transaction.json'), JSON.stringify({ backup: '../personal', stage: 'stage-123', entries: [{ name: 'user.lua', existed: false }] }));
+  await assert.rejects(engine.apply(brokenJournal), /Invalid recovery journal/);
+  assert.equal(fs.readFileSync(path.join(brokenJournal, 'user.lua'), 'utf8'), '-- my preferences');
+  console.log('PASS corrupt recovery journal cannot remove personal files');
 
   const corrupt = install('corrupt', before);
   await assert.rejects(prepare(corrupt, release(after, false, true)), /checksum mismatch/);
