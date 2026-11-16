@@ -37,7 +37,7 @@ function M.new(config, tab_id)
   if config.base_url ~= '' then
     assert(config.base_url:match('^https://') or config.base_url:match('^http://localhost[:/]') or config.base_url:match('^http://127%.0%.0%.1[:/]'), 'Use HTTPS or a loopback endpoint')
     assert(config.api_key_env:match('^[A-Z][A-Z0-9_]*$'), 'api_key_env must name an environment variable, never a shell command')
-    assert(vim.env[config.api_key_env] and vim.env[config.api_key_env] ~= '', 'Set environment variable ' .. config.api_key_env .. ' before starting movim AI')
+    assert(vim.env[config.api_key_env] and vim.env[config.api_key_env] ~= '', 'Enter your API key with :AIKey, or set environment variable ' .. config.api_key_env)
     local provider = { baseUrl = config.base_url, api = config.api, apiKey = config.api_key_env,
       models = { { id = config.model, name = config.model, reasoning = false, input = { 'text' },
         contextWindow = config.context_window, maxTokens = config.output_tokens, cost = { input = 0, output = 0, cacheRead = 0, cacheWrite = 0 } } } }

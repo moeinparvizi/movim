@@ -141,6 +141,49 @@ test('Confirmed selection prompt always creates an independent new tab', functio
   assert(#S.tabs == before + 1 and S.current() ~= previous and S.current().status == 'processing')
   S.cancel(S.current()); require('movim_ai.ui').hide()
 end)
+test('Hidden API key is session-only; cancellation preserves it and busy tabs block changes', function()
+  local ai = require('movim_ai')
+  local name, original_key = ai.config.api_key_env, vim.env[ai.config.api_key_env]
+  local input, save, restore = vim.fn.inputsecret, vim.fn.inputsave, vim.fn.inputrestore
+  local saved, restored, prompts = 0, 0, 0
+  vim.fn.inputsave = function() saved = saved + 1 end
+  vim.fn.inputrestore = function() restored = restored + 1 end
+  vim.fn.inputsecret = function() prompts = prompts + 1; return 'synthetic-session-secret' end
+  local tab = S.new(); local client = fake.new({}, tab.id); tab.client = client
+  ai.key()
+  assert(vim.env[name] == 'synthetic-session-secret' and client.closed and tab.client == nil)
+  vim.fn.inputsecret = function() return '' end
+  ai.key(); assert(vim.env[name] == 'synthetic-session-secret')
+  vim.fn.inputsecret = function() error('cancelled') end
+  ai.key(); assert(vim.env[name] == 'synthetic-session-secret' and saved == restored)
+  tab.status = 'processing'; assert(not pcall(ai.key)); tab.status = 'idle'
+  assert(prompts == 1)
+  if vim.fn.filereadable(ai.settings_path) == 1 then
+    assert(not table.concat(vim.fn.readfile(ai.settings_path), '\n'):find('synthetic-session-secret', 1, true))
+  end
+  vim.fn.inputsecret, vim.fn.inputsave, vim.fn.inputrestore = input, save, restore
+  vim.env[name] = original_key
+end)
+
+test('Configuration automatically asks for a missing key and saves only provider settings', function()
+  local ai = require('movim_ai')
+  local original_config, original_path = ai.config, ai.settings_path
+  local original_input, original_key = vim.ui.input, ai.key
+  local name = 'MOVIM_AI_CONFIG_TEST_KEY'; local previous = vim.env[name]; vim.env[name] = nil
+  ai.settings_path = vim.fn.tempname() .. '/provider.json'
+  local answers = { 'https://openrouter.ai/api/v1', 'test/model', '32768', name }
+  local index, asked = 0, false
+  vim.ui.input = function(_, callback) index = index + 1; callback(answers[index]) end
+  ai.key = function() asked = true; vim.env[name] = 'synthetic-config-secret' end
+  ai.configure()
+  local settings = table.concat(vim.fn.readfile(ai.settings_path), '\n')
+  assert(asked and index == 4 and vim.json.decode(settings).api_key_env == name)
+  assert(not settings:find('synthetic-config-secret', 1, true))
+  vim.fn.delete(ai.settings_path); vim.fn.delete(vim.fn.fnamemodify(ai.settings_path, ':h'), 'd')
+  ai.config, ai.settings_path, vim.ui.input, ai.key = original_config, original_path, original_input, original_key
+  vim.env[name] = previous
+end)
+
 -- Cross the event-loop boundary like an actual Apply command to verify undo grouping.
 local undo_buffer = buffer('before\nkeep')
 vim.schedule(function()

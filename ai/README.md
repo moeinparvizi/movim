@@ -17,9 +17,9 @@ macOS installs to `~/.config/movim-ai`, uses `NVIM_APPNAME=movim-ai`, and create
 
 ## Configure the model
 
-Run `:AIConfigure` for an OpenAI-compatible endpoint. Enter the endpoint, exact model ID, verified context-window size, and an **environment variable name**, not an API key. The provider settings are stored in the AI edition's Neovim state directory. Export that variable before launching the editor; no credentials ship in these installers.
+Run `:AIConfigure` for an OpenAI-compatible endpoint. Enter the endpoint, exact model ID, verified context-window size, and an **environment variable name**, not an API key. The provider settings are stored in the AI edition's Neovim state directory. When the variable is missing, configuration opens a hidden API-key prompt. You can also use `:AIKey` at any time while no requests are running. The key is kept only in the current process environment, never in provider.json or command history; re-enter it after restarting, or export the configured variable before launching. No credentials ship in these installers.
 
-For example, configure your provider's actual URL and model, then set `MOVIM_AI_API_KEY` in your terminal. There is no bundled account or guaranteed access to GapCode models. A model name such as Luna is usable only if your provider exposes it through a supported API with your own authorization.
+For example, configure your provider's actual URL and model, then enter your key using `:AIKey` (or set `MOVIM_AI_API_KEY` in your terminal). There is no bundled account or guaranteed access to GapCode models. A model name such as Luna is usable only if your provider exposes it through a supported API with your own authorization.
 
 Advanced trusted configuration, set before startup:
 

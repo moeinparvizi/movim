@@ -30,6 +30,24 @@ function M.attach(buf, new_tab)
   sessions.attach(new_tab and sessions.new(vim.fn.fnamemodify(s.path, ':t')) or sessions.current(), s)
   ui.open()
 end
+function M.key()
+  local name = M.config.api_key_env
+  assert(name:match('^[A-Z][A-Z0-9_]*$'), 'Invalid API key environment variable name')
+  for _, tab in ipairs(sessions.tabs) do
+    assert(tab.status ~= 'processing', 'Wait or cancel running requests before changing the API key')
+  end
+  -- inputsecret bypasses UI plugins that might show or retain ordinary input.
+  vim.fn.inputsave()
+  local ok, value = pcall(vim.fn.inputsecret, 'API key (hidden; this session only): ')
+  vim.fn.inputrestore()
+  if not ok or not value or value == '' then return end
+  assert(not value:find('%s'), 'API keys cannot contain whitespace')
+  vim.env[name] = value
+  for _, tab in ipairs(sessions.tabs) do
+    if tab.client then tab.client:close(); tab.client = nil end
+  end
+  vim.notify('API key ready for this session. Use :AIChat to send a message. The key was not saved to disk.')
+end
 function M.configure()
   local fields = {
     { 'base_url', 'OpenAI-compatible base URL (HTTPS, no key): ' },
@@ -48,7 +66,8 @@ function M.configure()
       vim.fn.mkdir(vim.fn.fnamemodify(M.settings_path, ':h'), 'p')
       vim.fn.writefile({ vim.json.encode(values) }, M.settings_path)
       M.config = vim.tbl_deep_extend('force', M.config, values)
-      vim.notify('AI provider saved. Set ' .. values.api_key_env .. ' in your terminal, then restart movim AI. No credential was stored.')
+      vim.notify('AI provider saved. Use :AIKey to enter or replace your key without restarting.')
+      if not vim.env[values.api_key_env] or vim.env[values.api_key_env] == '' then M.key() end
       return
     end
     local field = fields[index]
@@ -146,6 +165,7 @@ function M.setup(options)
     if vim.api.nvim_buf_is_valid(r.snapshot.buf) then vim.cmd('wincmd p'); vim.api.nvim_set_current_buf(r.snapshot.buf) end
   end
   commands.AIConfigure = M.configure
+  commands.AIKey = M.key
   commands.AIMove = function(opts) ui.move(opts.args) end
   commands.AIResize = function(opts) ui.resize(opts.args) end
   for name, action in pairs(commands) do

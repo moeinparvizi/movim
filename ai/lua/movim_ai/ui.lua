@@ -14,7 +14,7 @@ function M.render()
   output[#output + 1] = ':AIAttach  :AIFile  :AIRefresh  :AIRemove  :AICancel'
   output[#output + 1] = ':AIPreview  :AIApply  :AIReject  :AIRevise  :AIRerun'
   output[#output + 1] = ':AIMove left|right|top|bottom   :AIResize 60'
-  output[#output + 1] = ':AIConfigure  (provider/model; API key stays in environment)'
+  output[#output + 1] = ':AIConfigure  (provider/model)  :AIKey  (hidden session key)'
   local tab
   for _, value in ipairs(sessions.tabs) do if value.id == sessions.selected then tab = value end end
   if tab then
