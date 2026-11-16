@@ -34,6 +34,7 @@ local function close()
   end
   if valid(s.source_win) then vim.api.nvim_set_current_win(s.source_win) end
 end
+M.close = close
 
 local function locate(s, flags)
   if state ~= s or not valid(s.source_win) or contents(s.search_buf) == "" then return end
@@ -129,6 +130,9 @@ toggle_replace = function(s)
     s.replace_buf, s.replace_win = prompt(s, " Replace | Enter: one | Ctrl+A: all ", 3)
     s.replace_open = true
     bind(s, s.replace_buf, true)
+    vim.api.nvim_buf_attach(s.replace_buf, false, { on_lines = function()
+      s.memory.replacement = contents(s.replace_buf); require('utils.workspace').queue()
+    end })
     if s.saved_replace then vim.api.nvim_buf_set_lines(s.replace_buf, 0, -1, false, { s.saved_replace }) end
     set_button(s)
     vim.api.nvim_set_current_win(s.replace_win)
@@ -159,7 +163,13 @@ function M.open()
   local s = { source_win = vim.api.nvim_get_current_win(), source_buf = vim.api.nvim_get_current_buf() }
   if vim.bo[s.source_buf].buftype ~= "" then return end
   state = s
+  s.memory = require('utils.workspace').search('buffer')
+  s.saved_replace = s.memory.replacement
   s.search_buf, s.search_win = prompt(s, " Find | Tab: replace | ↑↓: next ", 0)
+  vim.api.nvim_buf_set_lines(s.search_buf, 0, -1, false, { s.memory.query or '' })
+  vim.api.nvim_buf_attach(s.search_buf, false, { on_lines = function()
+    s.memory.query = contents(s.search_buf); require('utils.workspace').queue()
+  end })
   bind(s, s.search_buf, false)
   local _, col = position()
   s.button_buf = vim.api.nvim_create_buf(false, true)

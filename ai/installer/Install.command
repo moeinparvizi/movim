@@ -25,7 +25,7 @@ cat > "$HOME/.local/bin/movim-ai" <<'LAUNCHER'
 #!/bin/bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export NVIM_APPNAME=movim-ai
-if [ "$#" -gt 0 ] && [ -d "$1" ]; then cd "$1"; shift; fi
+if [ "$#" -gt 0 ] && [ -d "$1" ]; then cd "$1"; export MOVIM_PROJECT_DIR="$PWD"; shift; fi
 exec nvim "$@"
 LAUNCHER
 chmod 755 "$HOME/.local/bin/movim-ai"

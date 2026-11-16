@@ -113,7 +113,17 @@ For Windows Terminal 1.18, the legacy DirectWrite renderer can be selected with 
 | `Space qs` / `Space ql` | Restore this project's session / the last session |
 | `Space qd` | Stop saving the current session on exit |
 
-Persistence saves sessions on exit. The mappings use lowercase `s` and `l`; `Space qS` and `Space qL` are not configured. Use `Space wh/wj/wk/wl` to move a window to the left/bottom/top/right. `Space fb` lists buffers, `Ctrl+^` switches to the alternate file, and `Space k l` lists movim bookmarks. `:Telescope keymaps` shows the mappings active in the current buffer, including mappings loaded by plugins.
+Workspaces keep per-project open files, unsaved named and unnamed drafts, editor tabs, split sizes, cursors and views. `Space qp` or `:Workspaces` selects a previous project; `:WorkspaceOpen` opens a folder. `Space qS` saves a checkpoint and `Space qq` saves drafts and quits. Ordinary startup without file arguments restores the current directory’s saved workspace, or the last project. Passing a directory to the launcher chooses it explicitly; passing a file avoids automatic restore. Headless installer/CLI runs do not replace interactive workspaces. Use `Space wh/wj/wk/wl` to move a window to the left/bottom/top/right. `Space fb` lists buffers, `Ctrl+^` switches to the alternate file, and `Space k l` lists movim bookmarks. `:Telescope keymaps` shows the mappings active in the current buffer, including mappings loaded by plugins.
+
+## Persistent workspaces and searches
+
+Workspace checkpoints are saved after about one second of idle time, on focus loss and on exit, under `stdpath('state')/movim-workspaces`. Source files are written only with normal save commands such as `:w`; drafts remain modified after recovery. Switching projects checkpoints the current drafts first. `:WorkspaceQuit` refuses to exit if checkpointing fails. `Space qd` pauses automatic saving for this run; explicit saving and switching projects still checkpoint drafts.
+
+Find Files and Grep separately remember the last query, folder (Ctrl+D) and exclusion globs (Ctrl+X), including across application restarts. Clearing a value persists the empty value. Buffer Find and Replace retain their text too. Visual `Space fg` searches exactly the selected text, including Unicode; single-line selections use literal matching and multiline selections use escaped newline patterns. Normal `Space fg` reopens the last project query.
+
+Neo-tree retains its resized width and the terminal panel its height. Opening terminals no longer creates extra unnamed editor buffers. Editor split sizes are restored within the available screen space; `Space w=` explicitly equalizes them. Terminal processes/output and AI conversations are not restarted after application exit.
+
+Old persistence session files contribute their project folders and open file paths without executing Vimscript or modifying the original sessions. Unsaved text never captured by the old version cannot be recovered. Legacy layouts are recorded in the new format after opening and saving. New state uses atomic replacement, caches unchanged buffer text, and skips unchanged disk writes. Invalid state is refused before closing current files. If a source file changed externally, its recovered draft opens as a separate modified unnamed buffer so the disk file is preserved. Drafts are local text snapshots; a forced process kill can lose edits newer than the last checkpoint.
 
 ## Running scripts and tests
 

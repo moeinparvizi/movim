@@ -32,13 +32,7 @@ vim.api.nvim_create_autocmd("BufWritePre", {
   end,
 })
 
--- Equalize window sizes when the terminal is resized
-vim.api.nvim_create_autocmd("VimResized", {
-  group = augid,
-  callback = function()
-    vim.cmd("wincmd =")
-  end,
-})
+-- Neovim adjusts splits to the available screen; Space w = explicitly equalizes.
 
 -- Local-history snapshot on every save (WebStorm Local History)
 vim.api.nvim_create_autocmd("BufWritePre", {

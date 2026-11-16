@@ -3,6 +3,10 @@ return {
   "nvim-neo-tree/neo-tree.nvim",
   branch = "v3.x",
   cmd = "Neotree",
+  init = function()
+    -- Netrw is disabled; Neo-tree still clears its group when taking over.
+    vim.api.nvim_create_augroup('FileExplorer', { clear = false })
+  end,
   dependencies = { "nvim-lua/plenary.nvim", "nvim-tree/nvim-web-devicons", "MunifTanjim/nui.nvim" },
   keys = {
     { "<leader>e", "<cmd>Neotree toggle left<CR>", desc = "File explorer" },
@@ -50,6 +54,23 @@ return {
       },
     },
     event_handlers = {
+      {
+        event = 'neo_tree_window_after_open',
+        handler = function(args)
+          if args.position == 'float' or not args.winid or not vim.api.nvim_win_is_valid(args.winid) then return end
+          local width = require('utils.workspace').preference('explorer_width', 32)
+          vim.api.nvim_win_set_width(args.winid, math.max(15, math.min(width, vim.o.columns - 20)))
+          require('utils.workspace').queue()
+        end,
+      },
+      {
+        event = 'neo_tree_window_before_close',
+        handler = function(args)
+          if args.position ~= 'float' and args.winid and vim.api.nvim_win_is_valid(args.winid) then
+            require('utils.workspace').preference('explorer_width', 32, vim.api.nvim_win_get_width(args.winid))
+          end
+        end,
+      },
       {
         event = "file_opened",
         handler = function()

@@ -2,6 +2,8 @@
 
 ## 1.1
 
+- Persist per-project workspaces, unsaved named and unnamed drafts, split layouts, cursors, search scopes/exclusions and panel sizes. Add a project chooser, automatic startup recovery, atomic debounced checkpoints, legacy-session import and external-change recovery.
+- Search Visual selections with Space f g and stop terminal panels from leaving extra unnamed editor buffers.
 - Redesign the website around a terminal workspace, with responsive editor previews and self-hosted Persian and code fonts.
 - Fingerprint website scripts, styles and search data to prevent a cached English-only route from overriding new Persian pages.
 - Restore direct access to all twenty Persian chapters and five practical references, translate the remaining references, and add keyboard-driven full-text search, heading navigation and code copying. Persian is the homepage default; English remains an explicit choice.

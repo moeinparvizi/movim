@@ -2,13 +2,7 @@
 return {
   {
     "folke/persistence.nvim",
-    event = "BufReadPre",
-    opts = {},
-    keys = {
-      { "<leader>qs", function() require("persistence").load() end, desc = "Restore session" },
-      { "<leader>ql", function() require("persistence").load({ last = true }) end, desc = "Restore last session" },
-      { "<leader>qd", function() require("persistence").stop() end, desc = "Don't save session" },
-    },
+    enabled = false, -- Replaced by utils.workspace, including unsaved drafts.
   },
   {
     "nvimdev/dashboard-nvim",
@@ -32,7 +26,9 @@ return {
           { desc = " Find file", group = "Label", action = "Telescope find_files", key = "f" },
           { desc = " Recent", group = "Label", action = "Telescope oldfiles", key = "r" },
           { desc = " Git (lazygit)", group = "Label", action = "lua require('utils.term').lazygit()", key = "g" },
-          { desc = " Restore session", group = "Label", action = "lua require('persistence').load()", key = "s" },
+          { desc = " Project workspaces", group = "Label", action = "Workspaces", key = "p" },
+          { desc = " Open project folder", group = "Label", action = "WorkspaceOpen", key = "o" },
+          { desc = " Restore last workspace", group = "Label", action = "WorkspaceLast", key = "s" },
           { desc = " Explorer", group = "Label", action = "Neotree toggle left", key = "e" },
         },
         footer = { "Documentation: https://moeinparvizi.github.io/movim/docs-en/README.html" },

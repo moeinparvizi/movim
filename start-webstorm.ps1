@@ -24,6 +24,7 @@ if ($zig) { $env:PATH = "$($zig.FullName);$env:PATH" }
 $forwardArgs = @($args)
 if ($forwardArgs.Count -gt 0 -and (Test-Path -LiteralPath $forwardArgs[0] -PathType Container)) {
   Set-Location -LiteralPath $forwardArgs[0]
+  $env:MOVIM_PROJECT_DIR = (Get-Location).Path
   $forwardArgs = @($forwardArgs | Select-Object -Skip 1)
 }
 & $nvim -u (Join-Path $PSScriptRoot 'init.lua') @forwardArgs

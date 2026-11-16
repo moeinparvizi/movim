@@ -63,6 +63,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export NVIM_APPNAME=web-neovim
 if [ "$#" -gt 0 ] && [ -d "$1" ]; then
   cd "$1"
+  export MOVIM_PROJECT_DIR="$PWD"
   shift
 fi
 exec nvim "$@"

@@ -83,7 +83,10 @@ end
 local function ensure_window()
   local win = current_win()
   if win then vim.api.nvim_set_current_win(win); panel.win = win; return win end
-  vim.cmd("botright 15new")
+  local height = require('utils.workspace').preference('terminal_height', 15)
+  height = math.max(3, math.min(height, math.floor(vim.o.lines * 0.7)))
+  -- Split the current buffer; :new would leave an extra listed [No Name].
+  vim.cmd('botright ' .. height .. 'split')
   win = vim.api.nvim_get_current_win()
   register(win)
   return win
@@ -93,6 +96,7 @@ function M.new()
   local win = ensure_window()
   local buf = vim.api.nvim_create_buf(false, false)
   vim.bo[buf].bufhidden = "hide"
+  vim.b[buf].movim_terminal_panel = true
   local item = { id = panel.next_id, buf = buf, name = tostring(panel.next_id) }
   panel.next_id = panel.next_id + 1
   panel.sessions[#panel.sessions + 1] = item
@@ -124,6 +128,7 @@ end
 
 function M.hide()
   local win = current_win()
+  if win then require('utils.workspace').preference('terminal_height', 15, vim.api.nvim_win_get_height(win)) end
   local item = item_in(win)
   if item then panel.active = item.id end
   local windows = {}

@@ -12,6 +12,7 @@ return {
     { "<leader>ff", "<cmd>Telescope find_files<CR>", desc = "Find files" },
     { "<leader>fr", "<cmd>Telescope oldfiles<CR>", desc = "Recent files" },
     { "<leader>fg", "<cmd>Telescope live_grep<CR>", desc = "Grep in project" },
+    { "<leader>fg", function() require("utils.scoped_find").selection() end, mode = "x", desc = "Grep selected text in project" },
     { "<leader>f/", "<cmd>Telescope current_buffer_fuzzy_find<CR>", desc = "Search in current file" },
     { "<leader>fb", "<cmd>Telescope buffers<CR>", desc = "Buffers" },
     { "<leader>fh", "<cmd>Telescope help_tags<CR>", desc = "Help pages" },
@@ -47,45 +48,11 @@ return {
         },
       },
     },
-    pickers = {
-      find_files = {
-        hidden = true,
-        prompt_title = "Find Files | Ctrl+D: folder | Ctrl+X: exclude",
-        find_command = function() return { "rg", "--files", "--glob", "!.git/" } end,
-        attach_mappings = function(prompt_bufnr, map)
-          local ok, scoped_find = pcall(require, "utils.scoped_find")
-          if not ok then
-            -- A running Neovim may have cached the Lua directory before this file existed.
-            local source = debug.getinfo(1, "S").source:sub(2)
-            local path = vim.fn.fnamemodify(source, ":p:h:h") .. "/utils/scoped_find.lua"
-            local chunk = loadfile(path)
-            if chunk then ok, scoped_find = pcall(chunk) end
-          end
-          if ok then return scoped_find.attach(prompt_bufnr, map) end
-          vim.notify("Find Files scope controls could not be loaded; basic search is still available.", vim.log.levels.WARN)
-          return true
-        end,
-      },
-      live_grep = {
-        prompt_title = "Live Grep | Ctrl+D: folder | Ctrl+X: exclude",
-        attach_mappings = function(prompt_bufnr, map)
-          local ok, scoped_find = pcall(require, "utils.scoped_find")
-          if not ok then
-            local source = debug.getinfo(1, "S").source:sub(2)
-            local path = vim.fn.fnamemodify(source, ":p:h:h") .. "/utils/scoped_find.lua"
-            local chunk = loadfile(path)
-            if chunk then ok, scoped_find = pcall(chunk) end
-          end
-          if ok then return scoped_find.attach(prompt_bufnr, map, nil, "grep") end
-          vim.notify("Live Grep scope controls could not be loaded; basic search is still available.", vim.log.levels.WARN)
-          return true
-        end,
-      },
-    },
   },
   config = function(_, opts)
     local t = require("telescope")
     t.setup(opts)
+    require("utils.scoped_find").install()
     pcall(t.load_extension, "fzf")
     pcall(t.load_extension, "undo")
     pcall(t.load_extension, "notify")

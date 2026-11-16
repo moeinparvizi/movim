@@ -37,7 +37,7 @@ fi
 cat > "$BIN_DIR/movim" <<'LAUNCHER'
 #!/usr/bin/env bash
 export NVIM_APPNAME=movim
-if [ "$#" -gt 0 ] && [ -d "$1" ]; then cd "$1"; shift; fi
+if [ "$#" -gt 0 ] && [ -d "$1" ]; then cd "$1"; export MOVIM_PROJECT_DIR="$PWD"; shift; fi
 exec nvim "$@"
 LAUNCHER
 chmod 755 "$BIN_DIR/movim"

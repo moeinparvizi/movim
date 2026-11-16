@@ -4,6 +4,8 @@ Work in the Git repository containing this file (the outer workspace can be a se
 
 Every push to main runs .github/workflows/release.yml. The workflow updates the shared patch version and commits it with the Actions token, which does not recursively trigger another release. It builds Windows/macOS packages from one checkout, Linux from the same source commit, validates package hashes and clean Windows startup, tests the bundled fallback on native Unix runners, then publishes all three assets and deploys the matching documentation website.
 
+Workspace recovery tests run across fresh Neovim processes on Windows, Linux and macOS. Windows additionally exercises the real Telescope, Neo-tree and terminal UI with the prepared plugin runtime. The native macOS check uses `macos-15-intel` because the arm64 pool could not acquire a runner for the previous release; this does not claim interactive installation or Apple Silicon validation.
+
 The documentation guard requires changes in docs/*.md and site/docs-en/README.md for changes to configuration or installer behavior. It cannot verify the prose semantically; review the instructions against actual behavior.
 
 Windows runtime tools are seeded from the immutable v1.0.0 Windows installer. The seed configuration is discarded; the current checkout supplies all configuration and docs. Plugin revisions differing from the seed are downloaded from the current lazy-lock.json. Language-tool upgrades require updating the seed preparation step deliberately. Windows-only native plugin builds may also need a new build step after a lockfile change. A failed check blocks publication.
