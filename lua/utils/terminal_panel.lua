@@ -1,6 +1,12 @@
 -- Persistent terminal sessions shared by independently selectable panel splits.
 local M = {}
 local panel = { sessions = {}, active = nil, win = nil, wins = {}, next_id = 1 }
+local function project()
+  return require('utils.workspace').root or vim.fn.getcwd()
+end
+local function project_sessions()
+  return vim.tbl_filter(function(item) return item.project == project() end, panel.sessions)
+end
 
 local function valid(win)
   return win and vim.api.nvim_win_is_valid(win) and panel.wins[win]
@@ -38,7 +44,7 @@ local function redraw()
         .. "%2@v:lua.NemovimTerminalAction@rename%T "
         .. "%4@v:lua.NemovimTerminalAction@split%T "
         .. "%3@v:lua.NemovimTerminalAction@hide%T  " }
-      for _, item in ipairs(panel.sessions) do
+      for _, item in ipairs(project_sessions()) do
         local hl = current == item and "%#TabLineSel#" or "%#TabLine#"
         local label = vim.fn.strcharpart(item.name, 0, 12)
         if vim.fn.strchars(item.name) > 12 then label = label .. "…" end
@@ -97,7 +103,7 @@ function M.new()
   local buf = vim.api.nvim_create_buf(false, false)
   vim.bo[buf].bufhidden = "hide"
   vim.b[buf].movim_terminal_panel = true
-  local item = { id = panel.next_id, buf = buf, name = tostring(panel.next_id) }
+  local item = { id = panel.next_id, buf = buf, name = tostring(panel.next_id), project = project() }
   panel.next_id = panel.next_id + 1
   panel.sessions[#panel.sessions + 1] = item
   panel.active = item.id
@@ -113,7 +119,8 @@ function M.new()
   })
   if not ok or type(job) ~= "number" or job <= 0 then
     table.remove(panel.sessions, #panel.sessions)
-    local previous = panel.sessions[#panel.sessions]
+    local items = project_sessions()
+    local previous = items[#items]
     panel.active = previous and previous.id or nil
     if previous then show(previous, win) else M.hide() end
     if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_delete(buf, { force = true }) end
@@ -152,6 +159,9 @@ function M.toggle()
   if current_win() then return M.hide() end
   local win = ensure_window()
   local item = find(panel.active)
+  if not item or item.project ~= project() then
+    local items = project_sessions(); item = items[#items]
+  end
   if item and vim.api.nvim_buf_is_valid(item.buf) then show(item, win) else M.new() end
 end
 
@@ -164,9 +174,10 @@ end
 function M.cycle(step)
   local win = current_win()
   local current = item_in(win) or find(panel.active)
-  local _, index = find(current and current.id)
+  local items, index = project_sessions(), nil
+  for i, item in ipairs(items) do if current and current.id == item.id then index = i; break end end
   if not index then return end
-  M.select(panel.sessions[((index - 1 + step) % #panel.sessions) + 1].id, win)
+  M.select(items[((index - 1 + step) % #items) + 1].id, win)
 end
 
 function M.split()
@@ -201,7 +212,8 @@ function M.close(id)
   if not item then return end
   local _, index = find(item.id)
   table.remove(panel.sessions, index)
-  local next_item = panel.sessions[math.min(index, #panel.sessions)]
+  local items = project_sessions()
+  local next_item = items[math.min(index, #items)]
   if panel.active == item.id then panel.active = next_item and next_item.id or nil end
   if not next_item then
     M.hide()
@@ -212,7 +224,7 @@ function M.close(id)
     end
     for _, candidate in ipairs(showing) do
       local alternative
-      for _, session in ipairs(panel.sessions) do
+      for _, session in ipairs(items) do
         local used = false
         for other in pairs(panel.wins) do
           if other ~= candidate and valid(other) and vim.api.nvim_win_get_buf(other) == session.buf then used = true end

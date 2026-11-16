@@ -125,6 +125,8 @@ Find Files and Grep separately remember the last query, folder (Ctrl+D) and excl
 
 Neo-tree retains its resized width and the terminal panel its height. Opening terminals no longer creates extra unnamed editor buffers. Editor split sizes are restored within the available screen space; `Space w=` explicitly equalizes them. Terminal processes/output and AI conversations are not restarted after application exit.
 
+Within one editor process, terminal tabs belong to their project. Switching projects hides the previous panel; reopening the panel in the new project selects that project's shell. Returning to the original project makes its still-running terminals available again.
+
 Old persistence session files contribute their project folders and open file paths without executing Vimscript or modifying the original sessions. Unsaved text never captured by the old version cannot be recovered. Legacy layouts are recorded in the new format after opening and saving. New state uses atomic replacement, caches unchanged buffer text, and skips unchanged disk writes. Invalid state is refused before closing current files. If a source file changed externally, its recovered draft opens as a separate modified unnamed buffer so the disk file is preserved. Drafts are local text snapshots; a forced process kill can lose edits newer than the last checkpoint.
 
 ## Running scripts and tests
