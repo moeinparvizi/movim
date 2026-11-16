@@ -81,6 +81,8 @@ movim also applies a display-only correction to common Persian and Arabic runs o
 
 ## Updates
 
+For AI runtime upgrades, the Node.js installation must include npm on Windows, macOS and Linux.
+
 Files are checked both when downloaded and immediately before applying, so edits made while an update is waiting are protected too. Installer upgrade checks run before copying files.
 
 Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`**. The latest stable release downloads in the background using Node.js, verifies the archive checksum and every manifest file, and is staged until you close all movim windows and reopen. Use **Space qq** to checkpoint drafts and quit. No uninstall is needed. Checks require curl; updates require Node.js and internet. Set `vim.g.movim_check_updates = false` in `user.lua` to disable daily checks. `:MovimCheckUpdate` only checks; downloads start when requested.

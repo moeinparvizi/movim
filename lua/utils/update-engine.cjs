@@ -186,8 +186,16 @@ async function stageFiles(root, dir, files, version) {
     let runtime = false;
     if (files.has('ai/runtime/package-lock.json') &&
         (!exists(path.join(root, 'ai/runtime/node_modules')) || digest(files.get('ai/runtime/package-lock.json')) !== digest(fs.readFileSync(path.join(root, 'ai/runtime/package-lock.json'))))) {
-      const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
-      if (!exists(npm)) throw Error('npm is required to prepare the new AI runtime. Install Node.js with npm.');
+      const bin = path.dirname(process.execPath);
+      const candidates = [path.join(bin, 'node_modules/npm/bin/npm-cli.js'), path.resolve(bin, '../lib/node_modules/npm/bin/npm-cli.js')];
+      if (process.platform !== 'win32') {
+        for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+          const npmPath = path.join(dir, 'npm');
+          if (exists(npmPath)) candidates.push(fs.realpathSync(npmPath));
+        }
+      }
+      const npm = candidates.find(file => exists(file) && path.basename(file) === 'npm-cli.js');
+      if (!npm) throw Error('npm is required to prepare the new AI runtime. Install Node.js with npm.');
       const install = spawnSync(process.execPath, [npm, 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: path.join(stage, 'ai/runtime'), encoding: 'utf8', timeout: 300000, windowsHide: true });
       if (install.error || install.status !== 0) throw Error('AI runtime preparation failed; installed version is unchanged. ' + (install.error?.message || install.stderr || '').slice(-1200));
       fs.mkdirSync(path.join(stage, 'ai/runtime/node_modules'), { recursive: true });
