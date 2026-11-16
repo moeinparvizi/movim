@@ -203,7 +203,9 @@ function M.save(force)
         local modified = vim.bo[buf].modified
         local tick = api.nvim_buf_get_changedtick(buf)
         local entry = cache[buf]
-        if not entry or entry.name ~= name then entry = { name = name, disk = disk_hash(name) }; cache[buf] = entry end
+        if not entry or entry.name ~= name then
+          entry = { name = name, disk = modified and disk_hash(name) or nil }; cache[buf] = entry
+        end
         if modified or name == '' then
           if entry.tick ~= tick then entry.lines = api.nvim_buf_get_lines(buf, 0, -1, true); entry.tick = tick end
         end
@@ -297,7 +299,10 @@ function M.open(path, options)
       local conflict = item.draft and name ~= '' and item.disk_hash ~= disk_hash(name)
       local buf
       if name ~= '' and not conflict then
-        buf = vim.fn.bufadd(name); vim.fn.bufload(buf); vim.bo[buf].buflisted = true
+        buf = vim.fn.bufadd(name); vim.bo[buf].buflisted = true
+        -- Hidden clean files stay unloaded; only visible files and drafts need
+        -- file I/O, FileType hooks and language servers during restoration.
+        if item.draft then vim.fn.bufload(buf) end
       else buf = api.nvim_create_buf(true, false) end
       buffers[item.key] = buf
       if item.draft then
@@ -306,10 +311,10 @@ function M.open(path, options)
         vim.bo[buf].fileencoding = item.fileencoding or ''
         vim.bo[buf].modified = item.modified or name == '' or conflict
       end
-      if item.filetype and item.filetype ~= '' then vim.bo[buf].filetype = item.filetype end
+      if api.nvim_buf_is_loaded(buf) and item.filetype and item.filetype ~= '' then vim.bo[buf].filetype = item.filetype end
       vim.b[buf].movim_recovery_origin = conflict and name or item.recovery_origin
       if conflict then conflicts[#conflicts + 1] = name end
-      cache[buf] = { name = api.nvim_buf_get_name(buf), disk = conflict and 'missing' or disk_hash(name) }
+      if api.nvim_buf_is_loaded(buf) then cache[buf] = { name = api.nvim_buf_get_name(buf), disk = conflict and 'missing' or disk_hash(name) } end
     end
     local tabs = {}
     for i, tab in ipairs(state.tabs) do

@@ -12,6 +12,7 @@ try {
   fs.mkdirSync(path.join(scratch, 'legacy'), { recursive: true });
   fs.writeFileSync(path.join(scratch, 'A/one.txt'), 'disk\nsecond\n');
   fs.writeFileSync(path.join(scratch, 'A/two.txt'), 'two\n');
+  fs.writeFileSync(path.join(scratch, 'A/cold.txt'), 'hidden clean buffer\n');
   fs.writeFileSync(path.join(scratch, 'B/other.txt'), 'other\n');
   fs.writeFileSync(path.join(scratch, 'C/exit.txt'), 'disk exit\n');
   fs.writeFileSync(path.join(scratch, 'D/old.txt'), 'old project\n');

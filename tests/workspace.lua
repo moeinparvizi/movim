@@ -27,6 +27,7 @@ if phase == 'write' then
   vim.api.nvim_win_set_width(0, 55)
   vim.cmd('tab split'); vim.cmd('enew')
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'unnamed draft فارسی' })
+  vim.cmd('badd ' .. vim.fn.fnameescape(A .. '/cold.txt'))
   local files = W.search('files'); files.query, files.cwd, files.exclude = 'one', A .. '/src', { 'node_modules/**', '*.lock' }
   W.search('grep').query = 'hello.*world'
   W.preference('explorer_width', 32, 46); W.preference('terminal_height', 15, 12)
@@ -46,6 +47,7 @@ elseif phase == 'read' then
   assert(W.open(A, { startup = true }))
   local one = named(A .. '/one.txt')
   check(one > 0 and text(one) == 'unsaved فارسی\nsecond' and vim.bo[one].modified, 'fresh process restores unsaved named buffer')
+  check(named(A .. '/cold.txt') > 0 and not vim.api.nvim_buf_is_loaded(named(A .. '/cold.txt')), 'hidden clean files stay unloaded during workspace restore')
   local draft
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_get_name(buf) == '' and vim.bo[buf].buflisted and text(buf):find('unnamed draft', 1, true) then draft = buf end

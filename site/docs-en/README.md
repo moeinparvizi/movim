@@ -119,6 +119,8 @@ Workspaces keep per-project open files, unsaved named and unnamed drafts, editor
 
 Workspace checkpoints are saved after about one second of idle time, on focus loss and on exit, under `stdpath('state')/movim-workspaces`. Source files are written only with normal save commands such as `:w`; drafts remain modified after recovery. Switching projects checkpoints the current drafts first. `:WorkspaceQuit` refuses to exit if checkpointing fails. `Space qd` pauses automatic saving for this run; explicit saving and switching projects still checkpoint drafts.
 
+Hidden clean buffers remain unloaded during restoration, deferring their disk reads, FileType hooks and language servers until they are displayed. Visible files and recovered drafts load immediately.
+
 Find Files and Grep separately remember the last query, folder (Ctrl+D) and exclusion globs (Ctrl+X), including across application restarts. Clearing a value persists the empty value. Buffer Find and Replace retain their text too. Visual `Space fg` searches exactly the selected text, including Unicode; single-line selections use literal matching and multiline selections use escaped newline patterns. Normal `Space fg` reopens the last project query.
 
 Neo-tree retains its resized width and the terminal panel its height. Opening terminals no longer creates extra unnamed editor buffers. Editor split sizes are restored within the available screen space; `Space w=` explicitly equalizes them. Terminal processes/output and AI conversations are not restarted after application exit.
