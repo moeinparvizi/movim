@@ -81,6 +81,8 @@ movim also applies a display-only correction to common Persian and Arabic runs o
 
 ## Updates
 
+Files are checked both when downloaded and immediately before applying, so edits made while an update is waiting are protected too. Installer upgrade checks run before copying files.
+
 Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`**. The latest stable release downloads in the background using Node.js, verifies the archive checksum and every manifest file, and is staged until you close all movim windows and reopen. Use **Space qq** to checkpoint drafts and quit. No uninstall is needed. Checks require curl; updates require Node.js and internet. Set `vim.g.movim_check_updates = false` in `user.lua` to disable daily checks. `:MovimCheckUpdate` only checks; downloads start when requested.
 
 Updates replace only distributed configuration, features and documentation. Projects, workspace layouts, drafts, search history, exclusions, themes, AI data and API credentials are preserved. Put personal settings in **user.lua** beside init.lua: it loads after the main configuration and is never shipped or replaced. If a distributed file was edited, or a personal file conflicts with a newly shipped path, the update stops and lists the conflict. Move preferences to user.lua and restore/merge the original file before retrying. Git checkouts use Git instead of the installed-app updater.

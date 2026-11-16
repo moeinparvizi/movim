@@ -100,6 +100,7 @@ function M.is_newer(current, latest)
 end
 
 function M.check(manual)
+  if not manual and vim.g.movim_check_updates == false then return end
   if vim.fn.executable('curl') ~= 1 then
     if manual then vim.notify('Update check requires curl.', vim.log.levels.WARN) end
     return

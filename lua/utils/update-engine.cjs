@@ -300,6 +300,8 @@ async function apply(root, hooks = {}) {
       if (old['lazy-lock.json'] !== digest(staged.get('lazy-lock.json'))) json(path.join(dir, 'sync.json'), { version: info.version });
       fs.unlinkSync(pending);
       fs.unlinkSync(transaction);
+      // Commit is complete; failure to remove a temporary stage must not roll back.
+      try { fs.rmSync(stage, { recursive: true, force: true }); } catch (_) {}
       return { status: 'installed', version: info.version, backup: path.join(dir, backup) };
     } catch (error) { rollback(root, dir, journal); throw error; }
   });

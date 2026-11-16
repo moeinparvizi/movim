@@ -104,7 +104,7 @@ Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\movim.cmd"; WorkingDir: "
 const EnvKey = 'Environment';
 const MarkerKey = 'Software\WebNeovim\{#ProductId}';
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var ResultCode: Integer; NodePath, Params, Detail: String;
+var ResultCode: Integer; NodePath, Params: String; Details: TArrayOfString;
 begin
   Result := '';
   if not FileExists(ExpandConstant('{app}\neovim\release.json')) then exit;
@@ -123,8 +123,9 @@ begin
   if not Exec(NodePath, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
     Result := 'Could not check the existing installation. No settings were changed.'
   else if ResultCode <> 0 then begin
-    LoadStringFromFile(ExpandConstant('{app}\neovim\.movim-update\install-error.txt'), Detail);
-    Result := 'Upgrade stopped to preserve your files. ' + Detail;
+    Result := 'Upgrade stopped to preserve your files. ';
+    if LoadStringsFromFile(ExpandConstant('{app}\neovim\.movim-update\install-error.txt'), Details) then
+      if GetArrayLength(Details) > 0 then Result := Result + Details[0];
   end;
 end;
 function HasPathEntry(Entries, Entry: String): Boolean;
