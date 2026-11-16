@@ -9,18 +9,24 @@ eval "$(brew shellenv)"
 brew install neovim node ripgrep fd lazygit git
 TARGET="$HOME/.config/movim-ai"
 mkdir -p "$HOME/.config" "$HOME/.local/bin" "$HOME/Applications" "$HOME/Library/Fonts"
-if [ -e "$TARGET" ]; then
+if [ -f "$TARGET/release.json" ]; then
+  node "$SOURCE/lua/utils/update-engine.cjs" local "$TARGET" "$SOURCE"
+elif [ -e "$TARGET" ]; then
   BACKUP="$TARGET.backup.$(date +%Y%m%d%H%M%S)"
   test ! -e "$BACKUP" || { echo 'Backup already exists; retry later.'; exit 1; }
   mv "$TARGET" "$BACKUP"
 fi
-mkdir -p "$TARGET"
-cp -R "$SOURCE/." "$TARGET/"
+if [ ! -f "$TARGET/release.json" ]; then
+  mkdir -p "$TARGET"
+  cp -R "$SOURCE/." "$TARGET/"
+fi
 for font in "$TARGET"/fonts/*.ttf; do
   [ -f "$font" ] || continue
   [ -e "$HOME/Library/Fonts/$(basename "$font")" ] || cp "$font" "$HOME/Library/Fonts/"
 done
-(cd "$TARGET/ai/runtime" && npm ci --ignore-scripts --no-audit --no-fund)
+if [ ! -d "$TARGET/ai/runtime/node_modules" ]; then
+  (cd "$TARGET/ai/runtime" && npm ci --ignore-scripts --no-audit --no-fund)
+fi
 cat > "$HOME/.local/bin/movim-ai" <<'LAUNCHER'
 #!/bin/bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"

@@ -1,5 +1,12 @@
 # Changelog
 
+## In-app updates
+
+- Add dashboard Update movim, Space u U and :MovimUpdate. Download stable releases in the background and apply verified files on the next interactive launch.
+- Preserve user.lua, workspaces, drafts, project files, preferences and AI credentials; stop on edited distribution files or conflicting personal files.
+- Back up replaced files, roll back write failures and recover process interruption. Stage changed AI runtimes before applying them; synchronize plugins to the release lockfile.
+- Preserve existing Unix configuration on installer upgrades and check/back up existing Windows distribution files before overwriting them. Native runtimes still require an in-place installer upgrade.
+
 ## 1.1
 
 - Persist per-project workspaces, unsaved named and unnamed drafts, split layouts, cursors, search scopes/exclusions and panel sizes. Add a project chooser, automatic startup recovery, atomic debounced checkpoints, legacy-session import and external-change recovery.

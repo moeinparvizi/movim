@@ -50,7 +50,10 @@ Name: addpath; Description: "Add movim to the current user's PATH (run movim or 
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 
 [Files]
+Source: "{#Workspace}\neovim\lua\utils\update-engine.cjs"; DestDir: "{tmp}"; DestName: "movim-update-engine.cjs"; Flags: dontcopy
+Source: "{#Workspace}\neovim\release.json"; DestDir: "{tmp}"; DestName: "movim-incoming-release.json"; Flags: dontcopy
 #ifdef AiBuild
+Source: "{#Workspace}\neovim\ai\dist\ai-release.json"; DestDir: "{tmp}"; DestName: "movim-incoming-ai.json"; Flags: dontcopy
 Source: "{#Workspace}\neovim\ai\installer\movim-ai.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Workspace}\neovim\ai\lua\*"; DestDir: "{app}\neovim\ai\lua"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Workspace}\neovim\ai\README.md"; DestDir: "{app}\neovim\ai"; Flags: ignoreversion
@@ -100,6 +103,30 @@ Name: "{autodesktop}\{#ProductName}"; Filename: "{app}\movim.cmd"; WorkingDir: "
 [Code]
 const EnvKey = 'Environment';
 const MarkerKey = 'Software\WebNeovim\{#ProductId}';
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var ResultCode: Integer; NodePath, Params, Detail: String;
+begin
+  Result := '';
+  if not FileExists(ExpandConstant('{app}\neovim\release.json')) then exit;
+  NodePath := ExpandConstant('{app}\.tools\node-v22.23.5-win-x64\node.exe');
+  if not FileExists(NodePath) then begin
+    Result := 'The installed Node runtime is missing. Restore Node before upgrading; your settings have not been changed.';
+    exit;
+  end;
+  ExtractTemporaryFile('movim-update-engine.cjs');
+  ExtractTemporaryFile('movim-incoming-release.json');
+  Params := '"' + ExpandConstant('{tmp}\movim-update-engine.cjs') + '" check "' + ExpandConstant('{app}\neovim') + '" "' + ExpandConstant('{tmp}\movim-incoming-release.json') + '"';
+#ifdef AiBuild
+  ExtractTemporaryFile('movim-incoming-ai.json');
+  Params := Params + ' "' + ExpandConstant('{tmp}\movim-incoming-ai.json') + '"';
+#endif
+  if not Exec(NodePath, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    Result := 'Could not check the existing installation. No settings were changed.'
+  else if ResultCode <> 0 then begin
+    LoadStringFromFile(ExpandConstant('{app}\neovim\.movim-update\install-error.txt'), Detail);
+    Result := 'Upgrade stopped to preserve your files. ' + Detail;
+  end;
+end;
 function HasPathEntry(Entries, Entry: String): Boolean;
 var P: Integer; Item: String;
 begin

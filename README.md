@@ -26,7 +26,7 @@ Press **Space** to open the shortcut menu. Common shortcuts include `<leader>ff`
 
 ## Updates
 
-movim checks GitHub Releases for a newer stable version in the background at most once per day. Run `:MovimCheckUpdate` to check manually. Updates are announced, not installed automatically.
+Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`** to download and verify the latest stable release. Close all movim windows and reopen to apply it. Workspaces, drafts, searches, themes, personal `user.lua`, and AI credentials are preserved. Modified distribution files stop an update instead of being overwritten. Updates keep backups and recover interrupted writes. See [updates](docs/18-updates.md) for plugin synchronization and the one-time installer upgrade needed by older installations. Native runtimes and launchers still use an in-place installer upgrade; do not uninstall. `:MovimCheckUpdate` checks without installing.
 
 ## License
 

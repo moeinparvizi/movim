@@ -30,6 +30,7 @@ return {
           { desc = " Open project folder", group = "Label", action = "WorkspaceOpen", key = "o" },
           { desc = " Restore last workspace", group = "Label", action = "WorkspaceLast", key = "s" },
           { desc = " Explorer", group = "Label", action = "Neotree toggle left", key = "e" },
+          { desc = " Update movim", group = "Label", action = "MovimUpdate", key = "u" },
         },
         footer = { "Documentation: https://moeinparvizi.github.io/movim/docs-en/README.html" },
       },

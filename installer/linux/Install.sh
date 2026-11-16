@@ -17,14 +17,18 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 CONFIG_DIR="$CONFIG_HOME/movim"
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$CONFIG_HOME" "$BIN_DIR"
-if [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
+if [ -f "$CONFIG_DIR/release.json" ]; then
+  node "$SOURCE/lua/utils/update-engine.cjs" local "$CONFIG_DIR" "$SOURCE"
+elif [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
   BACKUP="$CONFIG_DIR.backup.$(date +%Y%m%d%H%M%S)"
   if [ -e "$BACKUP" ] || [ -L "$BACKUP" ]; then echo 'Backup already exists; retry shortly.' >&2; exit 1; fi
   mv "$CONFIG_DIR" "$BACKUP"
   printf 'Previous movim configuration backed up to %s\n' "$BACKUP"
 fi
-mkdir -p "$CONFIG_DIR"
-cp -R "$SOURCE/." "$CONFIG_DIR/"
+if [ ! -f "$CONFIG_DIR/release.json" ]; then
+  mkdir -p "$CONFIG_DIR"
+  cp -R "$SOURCE/." "$CONFIG_DIR/"
+fi
 if [ -d "$SOURCE/fonts" ]; then
   FONT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/movim"
   mkdir -p "$FONT_DIR"

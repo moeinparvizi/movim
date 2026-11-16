@@ -91,6 +91,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'AI RPC failed.' }
           node tests/workspace.cjs ../.tools/nvim-win64/bin/nvim.exe --ui
           if ($LASTEXITCODE -ne 0) { throw 'Workspace recovery failed.' }
+          node tests/updates.cjs ../.tools/nvim-win64/bin/nvim.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Update recovery failed.' }
           Pop-Location
       - name: Build and validate separate AI installers
         shell: powershell
@@ -156,6 +158,7 @@ jobs:
           nvim --headless -u NONE -l ai/tests/acceptance.lua
           node ai/tests/rpc.cjs "$(command -v nvim)"
           node tests/workspace.cjs "$(command -v nvim)"
+          node tests/updates.cjs "$(command -v nvim)"
       - name: Build and verify Linux archive
         if: runner.os == 'Linux'
         shell: bash

@@ -81,7 +81,15 @@ movim also applies a display-only correction to common Persian and Arabic runs o
 
 ## Updates
 
-movim checks for a newer stable GitHub release in the background at most once per day. Run `:MovimCheckUpdate` for a manual check. The check needs internet access and curl. It does not install updates automatically. To disable automatic checks, set `vim.g.movim_check_updates = false` before loading the configuration.
+Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`**. The latest stable release downloads in the background using Node.js, verifies the archive checksum and every manifest file, and is staged until you close all movim windows and reopen. Use **Space qq** to checkpoint drafts and quit. No uninstall is needed. Checks require curl; updates require Node.js and internet. Set `vim.g.movim_check_updates = false` in `user.lua` to disable daily checks. `:MovimCheckUpdate` only checks; downloads start when requested.
+
+Updates replace only distributed configuration, features and documentation. Projects, workspace layouts, drafts, search history, exclusions, themes, AI data and API credentials are preserved. Put personal settings in **user.lua** beside init.lua: it loads after the main configuration and is never shipped or replaced. If a distributed file was edited, or a personal file conflicts with a newly shipped path, the update stops and lists the conflict. Move preferences to user.lua and restore/merge the original file before retrying. Git checkouts use Git instead of the installed-app updater.
+
+Files are backed up under **.movim-update/backups/** before being changed. Write failures roll back, and an interrupted installation recovers on the next launch. Backups are retained until you remove them. For manual recovery, close movim and restore files from the chosen backup. AI editions update AI code in the same release; a changed Pi dependency is prepared with npm in staging before applying anything. Failed downloads, checksums or runtime preparation leave the installed version unchanged.
+
+When lazy-lock.json changes, plugins are installed/restored to the release's pinned versions after startup. Internet and Git are required; run `:MovimUpdate` to retry a failed synchronization. Reopen again if an already loaded plugin changed. The lightweight update does not replace native Neovim, language tools or launchers: upgrade those by running the new installer over the existing installation, without uninstalling. New Windows installers check existing configuration for edits and back it up before upgrading; macOS/Linux installers use the same preservation engine for installations with release.json. Interactive macOS/Linux installer validation requires those platforms.
+
+Older installations without `:MovimUpdate` need the new installer **once**. Close all editor windows and choose the same installation path and regular/AI edition. Keep application data; do not uninstall. Future feature updates are then available inside movim.
 
 ## Troubleshooting
 

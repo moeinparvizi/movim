@@ -1,5 +1,7 @@
 # Synchronized releases
 
+The in-app updater consumes the existing movim-macOS.zip or movim-AI-macOS.zip as a platform-neutral configuration payload on all platforms, plus SHA256SUMS. Keep those names, manifests and complete AI/base version agreement. Native executables and launchers remain installer-managed. Run `node tests/updates.cjs` on every supported OS: it checks staged installs, edit protection, checksums, rollback, process interruption, AI runtime preparation and installer preservation. User-owned user.lua and .movim-update/ must never be added to a release manifest.
+
 Work in the Git repository containing this file (the outer workspace can be a separate repository).
 
 Every push to main runs .github/workflows/release.yml. The workflow updates the shared patch version and commits it with the Actions token, which does not recursively trigger another release. It builds Windows/macOS packages from one checkout, Linux from the same source commit, validates package hashes and clean Windows startup, tests the bundled fallback on native Unix runners, then publishes all three assets and deploys the matching documentation website.

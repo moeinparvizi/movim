@@ -7,6 +7,7 @@ vim.g.skip_ts_context_commentstring_module = true
 
 -- Resolve the configuration from this file, including installation paths with spaces.
 vim.opt.runtimepath:prepend(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h"))
+require("utils.updates").bootstrap(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h"))
 
 -- Bootstrap everything
 require("config.options")
@@ -28,5 +29,12 @@ end
 
 -- Load persisted colorscheme (see lua/config/theme.lua + <leader>ut)
 require("config.theme").load()
+
+-- Personal settings are deliberately outside the distribution manifest.
+local user_config = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h') .. '/user.lua'
+if vim.fn.filereadable(user_config) == 1 then
+  local ok, err = pcall(dofile, user_config)
+  if not ok then vim.notify('user.lua: ' .. tostring(err), vim.log.levels.ERROR) end
+end
 
 -- The bundled Persian keyboard starts in English; F9 toggles it in Insert mode.

@@ -45,7 +45,9 @@ fi
 
 CONFIG_DIR="$HOME/.config/web-neovim"
 mkdir -p "$HOME/.config" "$HOME/.local/bin" "$HOME/Applications"
-if [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
+if [ -f "$CONFIG_DIR/release.json" ]; then
+  node "$CONFIG_SOURCE/lua/utils/update-engine.cjs" local "$CONFIG_DIR" "$CONFIG_SOURCE"
+elif [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
   BACKUP="$CONFIG_DIR.backup.$(date +%Y%m%d%H%M%S)"
   if [ -e "$BACKUP" ] || [ -L "$BACKUP" ]; then
     echo "Backup already exists: $BACKUP. Run the installer again in a moment." >&2
@@ -54,8 +56,10 @@ if [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
   mv "$CONFIG_DIR" "$BACKUP"
   echo "Previous movim config saved to: $BACKUP"
 fi
-mkdir -p "$CONFIG_DIR"
-cp -R "$CONFIG_SOURCE/." "$CONFIG_DIR/"
+if [ ! -f "$CONFIG_DIR/release.json" ]; then
+  mkdir -p "$CONFIG_DIR"
+  cp -R "$CONFIG_SOURCE/." "$CONFIG_DIR/"
+fi
 
 cat > "$HOME/.local/bin/movim" <<'LAUNCHER'
 #!/bin/bash

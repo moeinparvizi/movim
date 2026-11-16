@@ -2,3 +2,5 @@
 .health/
 .isolated/
 release.json
+.movim-update/
+user.lua
