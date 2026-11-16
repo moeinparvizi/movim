@@ -81,6 +81,8 @@ movim also applies a display-only correction to common Persian and Arabic runs o
 
 ## Updates
 
+After applying, movim executes the new entrypoint on the same launch, including new startup features. Slow local disk writes are allowed to finish instead of being killed by a UI timeout.
+
 Personal temporary files beside the configuration are preserved too: updates use unique temporary names. Invalid recovery metadata stops replacement and leaves backups available for inspection.
 
 For AI runtime upgrades, the Node.js installation must include npm on Windows, macOS and Linux.

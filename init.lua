@@ -7,7 +7,14 @@ vim.g.skip_ts_context_commentstring_module = true
 
 -- Resolve the configuration from this file, including installation paths with spaces.
 vim.opt.runtimepath:prepend(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h"))
-require("utils.updates").bootstrap(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h"))
+local config_root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h')
+if require('utils.updates').bootstrap(config_root) then
+  -- This chunk was read before the transaction. Execute the updated entrypoint
+  -- and updater so new startup features are available on this very launch.
+  package.loaded['utils.updates'] = nil
+  dofile(config_root .. '/init.lua')
+  return
+end
 
 -- Bootstrap everything
 require("config.options")

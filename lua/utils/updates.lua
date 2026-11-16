@@ -18,7 +18,9 @@ function M.bootstrap(config_root)
   if #vim.api.nvim_list_uis() == 0 then return end
   local dir = root .. '/.movim-update/'
   if vim.fn.filereadable(dir .. 'pending.json') == 0 and vim.fn.filereadable(dir .. 'transaction.json') == 0 then return end
-  local ok, result = pcall(function() return vim.system(command('apply'), { text = true }):wait(30000) end)
+  -- Applying is local only. Never kill a write transaction because a slow disk
+  -- exceeded a UI timeout; an external interruption is recovered next launch.
+  local ok, result = pcall(function() return vim.system(command('apply'), { text = true }):wait() end)
   if not ok or result.code ~= 0 then
     vim.schedule(function() vim.notify('movim update was not applied. Your files were preserved.\n' .. tostring(ok and result.stderr or result), vim.log.levels.ERROR) end)
     return
@@ -26,8 +28,10 @@ function M.bootstrap(config_root)
   local parsed, info = pcall(vim.json.decode, result.stdout)
   if parsed and info.status == 'installed' then
     vim.schedule(function() vim.notify('movim updated to ' .. info.version .. '. Backup: ' .. info.backup) end)
+    return true
   elseif parsed and info.status == 'recovered' then
     vim.schedule(function() vim.notify('Interrupted movim update rolled back. Run :MovimUpdate to try again.', vim.log.levels.WARN) end)
+    return true
   end
 end
 

@@ -6,11 +6,11 @@ local notices = {}
 vim.notify = function(message) notices[#notices + 1] = message end
 local pending = root .. '/.movim-update/pending.json'
 assert(vim.fn.filereadable(pending) == 1)
-updater.bootstrap(root)
+assert(not updater.bootstrap(root))
 assert(vim.fn.filereadable(pending) == 1, 'headless runs must not apply user updates')
 local uis = vim.api.nvim_list_uis
 vim.api.nvim_list_uis = function() return { {} } end
-updater.bootstrap(root)
+assert(updater.bootstrap(root), 'changed configuration must request a fresh entrypoint')
 vim.api.nvim_list_uis = uis
 assert(vim.fn.filereadable(pending) == 0, 'interactive bootstrap must apply before config loads')
 local manifest = vim.json.decode(table.concat(vim.fn.readfile(root .. '/release.json'), '\n'))
