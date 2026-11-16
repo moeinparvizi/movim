@@ -5,6 +5,7 @@ vim.o.columns, vim.o.lines = 180, 48
 local root = vim.env.MOVIM_WORKSPACE_TEST_DIR:gsub('\\', '/')
 local phase = vim.env.MOVIM_WORKSPACE_TEST_PHASE
 local W = require('utils.workspace')
+if phase == 'auto' then vim.cmd('cd ' .. vim.fn.fnameescape(root .. '/B')) end
 local options = { directory = root .. '/state' }
 if phase ~= 'auto' and phase ~= 'headless' then options.auto_restore = false end
 if phase == 'legacy' then options.legacy_directory = root .. '/legacy' end
@@ -79,7 +80,7 @@ elseif phase == 'auto' then
   local uis = vim.api.nvim_list_uis
   vim.api.nvim_list_uis = function() return { {} } end
   vim.api.nvim_exec_autocmds('VimEnter', {})
-  check(vim.wait(1000, function() return W.root == A end), 'normal startup automatically restores last project')
+  check(vim.wait(1000, function() return W.root == A end), 'normal startup restores last project despite a different known launch folder')
   vim.api.nvim_list_uis = uis
   check(text(named(A .. '/one.txt')) == 'unsaved فارسی\nsecond', 'automatic startup recovers previous draft')
 elseif phase == 'conflict' then

@@ -376,7 +376,9 @@ function M.setup(options)
       -- Installer and CLI checks must never replace an interactive workspace.
       if #api.nvim_list_uis() == 0 and options.auto_restore ~= false then return end
       if options.auto_restore ~= false and #api.nvim_list_uis() > 0 and vim.fn.argc() == 0 then
-        local root = registry().projects[M.root] and M.root or registry().last
+        -- Launchers may start in Documents or a previously visited folder.
+        -- With no explicit project argument, the last active project wins.
+        local root = registry().last
         if vim.env.MOVIM_PROJECT_DIR and vim.env.MOVIM_PROJECT_DIR ~= '' then root = normalize(vim.env.MOVIM_PROJECT_DIR) end
         if root then M.open(root, { startup = true }) end
       end
