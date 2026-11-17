@@ -14,7 +14,7 @@ return {
     { "<leader>be", "<cmd>Neotree float buffers<CR>", desc = "Buffers explorer" },
   },
   opts = {
-    close_if_last_window = true,
+    close_if_last_window = false,
     popup_border_style = "rounded",
     default_source = "filesystem",
     sources = { "filesystem", "buffers", "git_status" },
@@ -31,7 +31,7 @@ return {
         visible = false,
         hide_dotfiles = false,
         hide_gitignored = false,
-        hide_by_pattern = { "node_modules" },
+        hide_by_pattern = { "node_modules", ".movim" },
       },
     },
     git_status = {
@@ -51,6 +51,7 @@ return {
     },
     window = {
       width = 32,
+      auto_expand_width = false,
       mappings = {
         ["<space>"] = "none",
         ["l"] = "open",
@@ -60,20 +61,31 @@ return {
     },
     event_handlers = {
       { event = 'state_created', handler = function(state) require('utils.explorer_filter').apply(state) end },
+      { event = 'after_render', handler = function(state)
+        local workspace = require('utils.workspace')
+        if state.name ~= 'filesystem' or not state.path or vim.fs.normalize(state.path):gsub('/$', '') ~= workspace.root then return end
+        if workspace.explorer_loading == workspace.root and state.winid and vim.api.nvim_win_is_valid(state.winid) then
+          local width = workspace.preference('explorer_width', 32)
+          vim.api.nvim_win_set_width(state.winid, math.max(15, math.min(width, vim.o.columns - 20)))
+          workspace.explorer_loading = nil
+        end
+        workspace.capture_explorer(state)
+      end },
       {
         event = 'neo_tree_window_after_open',
         handler = function(args)
           if args.position == 'float' or not args.winid or not vim.api.nvim_win_is_valid(args.winid) then return end
           local width = require('utils.workspace').preference('explorer_width', 32)
           vim.api.nvim_win_set_width(args.winid, math.max(15, math.min(width, vim.o.columns - 20)))
+          vim.wo[args.winid].winfixwidth = true
           require('utils.workspace').queue()
         end,
       },
       {
         event = 'neo_tree_window_before_close',
         handler = function(args)
-          if args.position ~= 'float' and args.winid and vim.api.nvim_win_is_valid(args.winid) then
-            require('utils.workspace').preference('explorer_width', 32, vim.api.nvim_win_get_width(args.winid))
+          if not require('utils.workspace').restoring and args.position ~= 'float' and args.winid and vim.api.nvim_win_is_valid(args.winid) then
+            require('utils.workspace').capture_sizes()
           end
         end,
       },

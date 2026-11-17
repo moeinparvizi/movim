@@ -25,7 +25,7 @@ return {
       { "<leader>c", group = "Code / LSP" },
       { "<leader>d", group = "Debug (DAP)" },
       { "<leader>D", group = "Diff with clipboard" },
-      { "<leader>f", group = "Find file…" },
+      { "<leader>f", group = "Find / search", mode = { "n", "x" } },
       { "<leader>g", group = "Git" },
       { "<leader>gh", group = "Git hunk" },
       { "<leader>h", group = "History" },

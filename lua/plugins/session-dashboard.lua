@@ -46,7 +46,13 @@ return {
         end
         return result
       end
-      require("dashboard").setup(opts)
+      local dashboard = require('dashboard')
+      -- The plugin drops its options after leaving the dashboard. Its async
+      -- disk-cache callback can then render into a deleted/replaced buffer
+      -- during quick project switches. Our options are already in memory.
+      dashboard.setup(opts)
+      local configured = vim.deepcopy(dashboard.opts)
+      getmetatable(dashboard).get_opts = function(_, callback) callback(vim.deepcopy(configured)) end
     end,
   },
   {

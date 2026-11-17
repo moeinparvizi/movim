@@ -3,4 +3,5 @@
 .isolated/
 release.json
 .movim-update/
+.movim/
 user.lua

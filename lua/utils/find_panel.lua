@@ -15,7 +15,9 @@ local function start_typing(win)
 end
 
 local function pattern(text)
-  return [[\V]] .. vim.fn.escape(text, [[\]])
+  local result = [[\V]] .. vim.fn.escape(text, [[\]])
+  if state and state.memory.multiline then result = result:gsub('\\\\n', [[\n]]) end
+  return result
 end
 
 local function contents(buf)
@@ -162,12 +164,14 @@ local function toggle_button(s)
   end
 end
 
-function M.open()
+function M.open(options)
   if state then close() end
   local s = { source_win = vim.api.nvim_get_current_win(), source_buf = vim.api.nvim_get_current_buf() }
   if vim.bo[s.source_buf].buftype ~= "" then return end
   state = s
   s.memory = require('utils.workspace').search('buffer')
+  if options and options.default_text ~= nil then s.memory.query = options.default_text end
+  if options and options.default_text ~= nil then s.memory.multiline = options.multiline or false end
   s.saved_replace = s.memory.replacement
   s.search_buf, s.search_win = prompt(s, " Find | Tab: replace | ↑↓: next ", 0)
   vim.api.nvim_buf_set_lines(s.search_buf, 0, -1, false, { s.memory.query or '' })

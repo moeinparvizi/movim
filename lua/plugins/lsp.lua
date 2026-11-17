@@ -32,12 +32,14 @@ return {
     "saghen/blink.cmp",
   },
   config = function()
+    require('utils.inlay_hints').setup()
     local capabilities = {}
     pcall(function()
       capabilities = require("blink.cmp").get_lsp_capabilities()
     end)
 
     local on_attach = function(client, bufnr)
+      require('utils.inlay_hints').attach(client, bufnr)
       -- Inlay hints (parameter names etc.) — toggle with <leader>ui
       if vim.lsp.inlay_hint then
         pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })

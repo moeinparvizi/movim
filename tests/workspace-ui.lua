@@ -59,6 +59,14 @@ api.nvim_buf_set_lines(source, 0, -1, false, { 'prefix [a.b] فارسی suffix',
 api.nvim_win_set_cursor(0, { 1, 7 }); vim.cmd('normal! v4l')
 require('utils.scoped_find').selection(); p = picker()
 check(p:_get_prompt() == '[a.b]' and W.search('grep').literal, 'Visual grep searches selected text literally')
+close(); api.nvim_set_current_buf(source); api.nvim_win_set_cursor(0, { 1, 7 }); vim.cmd('normal! v4l')
+require('utils.scoped_find').selection('files'); p = picker()
+check(p:_get_prompt() == '[a.b]', 'Visual Find Files starts with the selected text')
+close(); api.nvim_set_current_buf(source); api.nvim_win_set_cursor(0, { 1, 7 }); vim.cmd('normal! v4l')
+require('utils.scoped_find').selection('buffer')
+check(api.nvim_buf_get_lines(0, 0, 1, false)[1] == '[a.b]', 'Visual Find in current file starts with selected literal text')
+require('utils.find_panel').close(); vim.cmd('stopinsert')
+builtin.live_grep(); p = picker()
 close(); api.nvim_set_current_buf(source); api.nvim_win_set_cursor(0, { 1, 13 }); vim.cmd('normal! v4l')
 require('utils.scoped_find').selection(); p = picker()
 check(p:_get_prompt() == 'فارسی', 'Visual grep preserves complete Unicode selection: ' .. p:_get_prompt())
@@ -94,7 +102,13 @@ local function blank_count()
 end
 local before = blank_count()
 local T = require('utils.terminal_panel')
-for _ = 1, 3 do T.new(); vim.cmd('stopinsert'); T.close() end
+for _ = 1, 3 do
+  T.new(); vim.cmd('stopinsert')
+  check(vim.wo.winbar:find('@ 1 ', 1, true) ~= nil, 'first terminal reuses display number 1 after closing')
+  local terminal = api.nvim_get_current_buf(); T.hide(); T.toggle(); vim.cmd('stopinsert')
+  check(api.nvim_get_current_buf() == terminal, 'hiding and reopening reuses the original shell')
+  T.close()
+end
 check(blank_count() == before, 'repeated terminal creation leaves no extra No Name buffers')
 vim.fn.mkdir(root .. '/A/.vscode', 'p')
 vim.fn.writefile({ vim.json.encode({ version = '2.0.0', tasks = { { label = 'Smoke', type = 'process', command = vim.fn.exepath('node'), args = { '-e', "require('fs').writeFileSync('task-ran.txt', 'movim-task-ok')" } } } }) }, root .. '/A/.vscode/tasks.json')
@@ -167,6 +181,28 @@ vim.ui.select = function(_, _, callback) callback(nil); cancelled = true end
 require('utils.git_project').choose(function() error('Cancelled Git picker opened a repository') end)
 assert(vim.wait(3000, function() return cancelled end)); vim.ui.select = select_before
 vim.notify = notify_before
+-- File-tab close callbacks must preserve editor windows and show the dashboard.
+assert(W.open(root .. '/A'))
+require('neo-tree.command').execute({ action = 'show', position = 'left' })
+assert(vim.wait(1500, function() return treewin() ~= nil end)); vim.wait(250)
+local opts = require('bufferline.config').options
+check(type(opts.close_command) == 'function' and type(opts.right_mouse_command) == 'function', 'tab mouse buttons use safe close callbacks')
+local protected = api.nvim_create_buf(true, false)
+api.nvim_buf_set_lines(protected, 0, -1, false, { 'keep this draft' })
+local confirm = vim.fn.confirm
+vim.fn.confirm = function() return 3 end; opts.close_command(protected)
+check(api.nvim_buf_is_valid(protected) and vim.bo[protected].modified, 'cancelling tab close preserves unsaved text')
+vim.fn.confirm = function() return 2 end; opts.close_command(protected); vim.fn.confirm = confirm
+check(not api.nvim_buf_is_valid(protected), 'explicit discard closes only the selected draft')
+for _, buf in ipairs(api.nvim_list_bufs()) do
+  if vim.bo[buf].buflisted and vim.bo[buf].buftype == '' then
+    vim.bo[buf].modified = false; opts.close_command(buf)
+  end
+end
+local dashboard
+for _, win in ipairs(api.nvim_list_wins()) do if vim.bo[api.nvim_win_get_buf(win)].filetype == 'dashboard' then dashboard = win end end
+check(dashboard ~= nil and treewin() ~= nil, 'closing last file tab keeps explorer and returns to startup dashboard')
+api.nvim_set_current_win(dashboard)
 check(vim.v.errmsg == '', 'full editor integration has no Neovim errors: ' .. vim.v.errmsg)
 W.stopped = true
 print('PASS workspace UI integration with real Telescope, Neo-tree and terminal jobs')

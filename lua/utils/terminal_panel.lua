@@ -103,7 +103,11 @@ function M.new()
   local buf = vim.api.nvim_create_buf(false, false)
   vim.bo[buf].bufhidden = "hide"
   vim.b[buf].movim_terminal_panel = true
-  local item = { id = panel.next_id, buf = buf, name = tostring(panel.next_id), project = project() }
+  local used = {}
+  for _, session in ipairs(project_sessions()) do used[session.name] = true end
+  local number = 1
+  while used[tostring(number)] do number = number + 1 end
+  local item = { id = panel.next_id, buf = buf, name = tostring(number), project = project() }
   panel.next_id = panel.next_id + 1
   panel.sessions[#panel.sessions + 1] = item
   panel.active = item.id
@@ -147,6 +151,7 @@ function M.hide()
         vim.api.nvim_win_set_buf(candidate, vim.api.nvim_create_buf(true, false))
         vim.wo[candidate].winbar = ""
         vim.wo[candidate].winfixheight = false
+        vim.api.nvim_win_call(candidate, function() require('utils.buf').dashboard() end)
       else
         vim.api.nvim_win_close(candidate, true)
       end

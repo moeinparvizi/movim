@@ -16,7 +16,7 @@ function M.open(kind, options)
     M.attach(bufnr, map, state, kind)
     return not attach or attach(bufnr, map) ~= false
   end
-  local args = {}
+  local args = { '--glob', '!.movim/**' }
   for _, pattern in ipairs(state.exclude or {}) do args[#args + 1] = '--glob'; args[#args + 1] = '!' .. pattern end
   if kind == 'grep' then
     if state.literal then args[#args + 1] = '--fixed-strings' end
@@ -79,12 +79,15 @@ function M.attach(prompt_bufnr, map, state, kind)
   end
   return true
 end
-function M.selection()
+function M.selection(kind)
+  kind = kind or 'grep'
   local mode = vim.fn.mode()
   assert(mode == 'v' or mode == 'V' or mode == '\22', 'Select text first')
   local lines = vim.fn.getregion(vim.fn.getpos('v'), vim.fn.getpos('.'), { type = mode })
   local text = table.concat(lines, '\n')
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'nx', false)
+  if kind == 'buffer' then return require('utils.find_panel').open({ default_text = text:gsub('\n', [[\n]]), multiline = #lines > 1 }) end
+  if kind == 'files' then return require('telescope.builtin').find_files({ default_text = text:gsub('\n', ' ') }) end
   local state = workspace().search('grep')
   state.literal, state.multiline = #lines == 1, #lines > 1
   if #lines > 1 then text = vim.fn.escape(text, [[\.^$*+?()[]{}|]]):gsub('\n', [[\n]]) end

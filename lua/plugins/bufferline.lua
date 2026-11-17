@@ -12,6 +12,9 @@ return {
   opts = {
     options = {
       mode = "buffers",
+      close_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,
+      right_mouse_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,
+      middle_mouse_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,
       left_mouse_command = function(bufnr) require("utils.tab_drag").press(bufnr) end,
       show_buffer_icons = true,
       show_close_icon = false,

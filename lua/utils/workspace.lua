@@ -2,6 +2,7 @@
 local M = { restoring = false, ready = false, stopped = false }
 local api, uv = vim.api, vim.uv
 local cache, states, signatures, index, pending = {}, {}, {}, nil, nil
+local valid
 local function normalize(path)
   local result = vim.fs.normalize(vim.fn.fnamemodify(path, ':p'))
   if result == '/' or result:match('^%a:/$') then return result end
@@ -11,7 +12,7 @@ local function id(path)
   return vim.fn.sha256(vim.fn.has('win32') == 1 and path:lower() or path)
 end
 local function folder() return M.directory or (vim.fn.stdpath('state') .. '/movim-workspaces') end
-local function filename(root) return folder() .. '/' .. id(root) .. '.json' end
+local function filename(root) return root .. '/.movim/settings.json' end
 local function read(path)
   if vim.fn.filereadable(path) == 0 then return nil end
   local ok, value = pcall(function() return vim.json.decode(table.concat(vim.fn.readfile(path), '\n')) end)
@@ -19,7 +20,7 @@ local function read(path)
   return nil, 'Cannot read workspace state: ' .. path .. '. The original file was preserved.'
 end
 local function write(path, value)
-  vim.fn.mkdir(folder(), 'p', 448)
+  vim.fn.mkdir(vim.fs.dirname(path), 'p', 448)
   local temporary = path .. '.' .. vim.fn.getpid() .. '.tmp'
   local file, err = uv.fs_open(temporary, 'w', 384); assert(file, err)
   local ok, failure = pcall(function()
@@ -34,6 +35,38 @@ local function write(path, value)
   uv.fs_close(file)
   if ok then ok, failure = uv.fs_rename(temporary, path) end
   if not ok then uv.fs_unlink(temporary); error(failure) end
+end
+local function project_paths(state, root, storing)
+  local value = vim.deepcopy(state)
+  local origin = normalize(value.root or root)
+  local function convert(path)
+    if not path or path == '' then return path end
+    if not path:match('^[/\\]') and not path:match('^%a:[/\\]') then
+      return storing and path or normalize(root .. '/' .. path)
+    end
+    local prefix = origin .. '/'
+    local comparable = vim.fn.has('win32') == 1 and path:lower() or path
+    local base = vim.fn.has('win32') == 1 and prefix:lower() or prefix
+    local relative
+    if comparable == base:sub(1, -2) then relative = '.'
+    elseif comparable:sub(1, #base) == base then relative = path:sub(#prefix + 1) end
+    if relative then return storing and relative or normalize(root .. '/' .. relative) end
+    return path
+  end
+  for _, item in ipairs(value.buffers or {}) do
+    item.name, item.recovery_origin = convert(item.name), convert(item.recovery_origin)
+  end
+  for _, search in pairs(value.searches or {}) do search.cwd = convert(search.cwd) end
+  value.root = root
+  return value
+end
+local function load(root)
+  local value, err = read(filename(root))
+  -- Migrate old checkpoints without deleting the original recovery copy.
+  if not value and not err then value, err = read(folder() .. '/' .. id(root) .. '.json') end
+  if value and not valid(value) then return nil, 'Unsupported workspace state: ' .. filename(root) end
+  if value then value = project_paths(value, root, false) end
+  return value, err
 end
 local function session_path(value, root)
   value = value:gsub('\\(.)', '%1'):gsub('^~', function() return vim.fn.expand('~') end)
@@ -87,13 +120,20 @@ local function import_legacy(path, root)
   end
   return result
 end
-local function valid(state)
+valid = function(state)
   if type(state) ~= 'table' or state.version ~= 1 or type(state.buffers) ~= 'table' or type(state.tabs) ~= 'table' then return false end
   if state.preferences ~= nil and type(state.preferences) ~= 'table' then return false end
   if state.searches ~= nil and type(state.searches) ~= 'table' then return false end
   for _, name in ipairs({ 'explorer_width', 'terminal_height' }) do
     local value = (state.preferences or {})[name]
     if value ~= nil and (type(value) ~= 'number' or value < 1) then return false end
+  end
+  for _, name in ipairs({ 'explorer_hidden', 'explorer_expanded' }) do
+    local value = (state.preferences or {})[name]
+    if value ~= nil then
+      if type(value) ~= 'table' then return false end
+      for _, entry in ipairs(value) do if type(entry) ~= 'string' then return false end end
+    end
   end
   for _, value in pairs(state.searches or {}) do
     if type(value) ~= 'table' or type(value.cwd) ~= 'string' or type(value.query) ~= 'string' or type(value.exclude) ~= 'table' then return false end
@@ -127,7 +167,7 @@ end
 function M.current()
   M.root = M.root or normalize(vim.fn.getcwd())
   if not states[M.root] then
-    local value, err = read(filename(M.root))
+    local value, err = load(M.root)
     if value and not valid(value) then err = 'Unsupported workspace state: ' .. filename(M.root) end
     states[M.root] = err and { blocked = err } or value or { version = 1, root = M.root, searches = {}, preferences = {}, buffers = {}, tabs = {} }
   end
@@ -146,7 +186,8 @@ function M.search(kind)
   local state = M.current()
   if state.blocked then return { cwd = M.root, exclude = {}, query = '' } end
   state.searches = state.searches or {}
-  state.searches[kind] = state.searches[kind] or { cwd = M.root, exclude = {}, query = '' }
+  local defaults = kind ~= 'buffer' and { '*.mrt', '*.ttf', '*.wff2', '*.wff', '*.woff2', '*.woff', '*.eot' } or {}
+  state.searches[kind] = state.searches[kind] or { cwd = M.root, exclude = defaults, query = '' }
   return state.searches[kind]
 end
 local function disk_hash(path)
@@ -164,19 +205,39 @@ local function normal(buf)
 end
 function M.capture_sizes()
   if M.restoring then return end
-  local explorer = false
+  local explorer = M.explorer_loading == M.root
   for _, win in ipairs(api.nvim_list_wins()) do
     if api.nvim_win_get_config(win).relative == '' then
       local buf = api.nvim_win_get_buf(win)
       if vim.bo[buf].filetype == 'neo-tree' then
         explorer = true
-        M.preference('explorer_width', 32, api.nvim_win_get_width(win))
+        -- A panel can briefly occupy the whole tab while windows are closed.
+        -- That transient width is not a user resize.
+        if not M.explorer_loading and #api.nvim_tabpage_list_wins(api.nvim_win_get_tabpage(win)) > 1 then
+          M.preference('explorer_width', 32, api.nvim_win_get_width(win))
+        end
+        if not M.explorer_loading and package.loaded['neo-tree.sources.manager'] then
+          local tree = require('neo-tree.sources.manager').get_state('filesystem', api.nvim_win_get_tabpage(win))
+          M.capture_explorer(tree)
+        end
       elseif vim.b[buf].movim_terminal_panel then
         M.preference('terminal_height', 15, api.nvim_win_get_height(win))
       end
     end
   end
   M.preference('explorer_open', false, explorer)
+end
+function M.capture_explorer(state)
+  if M.restoring or M.explorer_loading or not state or not state.tree or normalize(state.path or '') ~= M.root then return end
+  local expanded = {}
+  for _, path in ipairs(require('neo-tree.ui.renderer').get_expanded_nodes(state.tree)) do
+    path = normalize(path)
+    local prefix = M.root .. '/'
+    if path == M.root then expanded[#expanded + 1] = '.'
+    elseif path:sub(1, #prefix) == prefix then expanded[#expanded + 1] = path:sub(#prefix + 1) end
+  end
+  table.sort(expanded)
+  M.preference('explorer_expanded', {}, expanded)
 end
 local function layout(node, keys)
   if node[1] == 'leaf' then
@@ -231,7 +292,7 @@ function M.save(force)
     -- No timestamp in the comparison: unchanged events do not touch disk.
     if vim.deep_equal(signatures[M.root], state) then return end
     state.updated = os.time()
-    write(filename(M.root), state)
+    write(filename(M.root), project_paths(state, M.root, true))
     local list = registry(); list.projects[M.root] = { updated = state.updated }; list.last = M.root
     write(folder() .. '/index.json', list)
     signatures[M.root] = vim.deepcopy(state)
@@ -267,15 +328,16 @@ end
 function M.open(path, options)
   options = options or {}; path = normalize(path)
   if vim.fn.isdirectory(path) == 0 then vim.notify('Project folder does not exist: ' .. path, vim.log.levels.ERROR); return false end
-  local target, failure = read(filename(path))
+  local target, failure = load(path)
   if failure or (target and not valid(target)) then
     vim.notify(failure or ('Unsupported workspace: ' .. filename(path)), vim.log.levels.ERROR); return false
   end
   if not options.startup and not M.save(true) then return false end
-  if path == M.root and not options.startup then target = read(filename(path)) end
+  if path == M.root and not options.startup then target = load(path) end
   local previous = registry().projects[path]
   if not target and previous and previous.legacy then target = import_legacy(previous.legacy, path) end
   M.restoring = true
+  M.explorer_loading = nil
   local equalalways = vim.o.equalalways; vim.o.equalalways = false
   local ok, err = pcall(function()
     if package.loaded['utils.terminal_panel'] then package.loaded['utils.terminal_panel'].hide() end
@@ -334,10 +396,23 @@ function M.open(path, options)
       api.nvim_win_call(leaf.win, function() vim.wo.wrap = leaf.node.wrap or false; vim.fn.winrestview(leaf.node.view or {}) end)
     end
     if api.nvim_buf_is_valid(empty) and #vim.fn.win_findbuf(empty) == 0 then api.nvim_buf_delete(empty, { force = true }) end
+    if #state.buffers == 0 and vim.fn.exists(':Dashboard') == 2 then require('utils.buf').dashboard() end
     local width = state.preferences and state.preferences.explorer_width
     if width and state.preferences.explorer_open then
       local win = api.nvim_get_current_win()
-      pcall(function() require('neo-tree.command').execute({ action = 'show', position = 'left', dir = path }) end)
+      M.explorer_loading = path
+      local opened = pcall(function()
+        local tree = require('neo-tree.sources.manager').get_state('filesystem')
+        tree.window.width = math.max(15, math.min(width, vim.o.columns - 20))
+        tree.force_open_folders = {}
+        for _, relative in ipairs(state.preferences.explorer_expanded or { '.' }) do
+          if type(relative) == 'string' then
+            tree.force_open_folders[#tree.force_open_folders + 1] = require('neo-tree.utils').normalize_path(normalize(path .. '/' .. relative))
+          end
+        end
+        require('neo-tree.command').execute({ action = 'show', position = 'left', dir = path })
+      end)
+      if not opened then M.explorer_loading = nil end
       if api.nvim_win_is_valid(win) then api.nvim_set_current_win(win) end
     end
     if #conflicts > 0 then vim.notify('Disk files changed since the draft was saved. Recovered drafts are unnamed; originals were preserved:\n' .. table.concat(conflicts, '\n'), vim.log.levels.WARN) end
@@ -347,7 +422,8 @@ function M.open(path, options)
   local list = registry(); list.last = path; list.projects[path] = { updated = os.time() }
   local saved, failure = pcall(write, folder() .. '/index.json', list)
   if not saved then vim.notify('Could not update workspace index: ' .. tostring(failure), vim.log.levels.ERROR) end
-  M.queue(); return true
+  -- Create the project checkpoint immediately, including on first open.
+  return M.save()
 end
 function M.select()
   local projects = {}
@@ -371,7 +447,11 @@ function M.setup(options)
   end })
   api.nvim_create_autocmd('DirChanged', { group = group, callback = function()
     if M.restoring or not M.ready then return end
-    if M.save() then M.root = normalize(vim.fn.getcwd()); M.queue() end
+    local path = normalize(vim.fn.getcwd())
+    if path == M.root then return end
+    -- Local window/tab directories scope commands, not the entire workspace.
+    if vim.v.event.scope ~= 'global' then return end
+    vim.schedule(function() if normalize(vim.fn.getcwd()) == path then M.open(path) end end)
   end })
   api.nvim_create_autocmd('BufWipeout', { group = group, callback = function(args) cache[args.buf] = nil; M.queue() end })
   api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI', 'BufEnter', 'BufWritePost', 'WinClosed', 'TabClosed', 'CursorHold' }, { group = group, callback = M.queue })
@@ -382,13 +462,13 @@ function M.setup(options)
       -- Installer and CLI checks must never replace an interactive workspace.
       if #api.nvim_list_uis() == 0 and options.auto_restore ~= false then return end
       if options.auto_restore ~= false and #api.nvim_list_uis() > 0 and vim.fn.argc() == 0 then
-        -- Launchers may start in Documents or a previously visited folder.
-        -- With no explicit project argument, the last active project wins.
-        local root = registry().last
+        -- Launching in a folder always restores that folder's own workspace.
+        local root = M.root
         if vim.env.MOVIM_PROJECT_DIR and vim.env.MOVIM_PROJECT_DIR ~= '' then root = normalize(vim.env.MOVIM_PROJECT_DIR) end
         if root then M.open(root, { startup = true }) end
       end
       M.ready = true
+      if options.auto_restore ~= false then M.save() end
     end)
   end })
   if options.auto_restore == false then M.ready = true end

@@ -15,11 +15,12 @@ local function check(value, message) assert(value, message); print('PASS ' .. me
 local function text(buf) return table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, true), '\n') end
 local function named(path) return vim.fn.bufnr(vim.fn.fnamemodify(path, ':p')) end
 local function statefile(project)
-  local value = vim.fs.normalize(vim.fn.fnamemodify(project, ':p')):gsub('/$', '')
-  return root .. '/state/' .. vim.fn.sha256(vim.fn.has('win32') == 1 and value:lower() or value) .. '.json'
+  return project .. '/.movim/settings.json'
 end
 if phase == 'write' then
   assert(W.open(A, { startup = true }))
+  check(vim.fn.filereadable(statefile(A)) == 1, 'opening a folder creates .movim/settings.json immediately')
+  check(vim.tbl_contains(W.search('files').exclude, '*.mrt') and vim.tbl_contains(W.search('grep').exclude, '*.woff2'), 'new searches exclude report and font files by default')
   vim.cmd('edit ' .. vim.fn.fnameescape(A .. '/one.txt'))
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'unsaved فارسی', 'second' })
   vim.api.nvim_win_set_cursor(0, { 2, 2 })
@@ -84,9 +85,29 @@ elseif phase == 'auto' then
   local uis = vim.api.nvim_list_uis
   vim.api.nvim_list_uis = function() return { {} } end
   vim.api.nvim_exec_autocmds('VimEnter', {})
-  check(vim.wait(1000, function() return W.root == A end), 'normal startup restores last project despite a different known launch folder')
+  check(vim.wait(1000, function() return W.ready and named(B .. '/other.txt') > 0 end), 'normal startup restores launch folder instead of another recent project')
   vim.api.nvim_list_uis = uis
-  check(text(named(A .. '/one.txt')) == 'unsaved فارسی\nsecond', 'automatic startup recovers previous draft')
+  check(text(named(B .. '/other.txt')) == 'B unsaved' and named(A .. '/one.txt') == -1, 'automatic startup only recovers this folder drafts')
+elseif phase == 'portable' then
+  local E = root .. '/E'
+  assert(W.open(E, { startup = true }))
+  check(named(A .. '/one.txt') == -1 and text(named(E .. '/one.txt')) == 'unsaved فارسی\nsecond', 'copied workspace restores drafts using paths inside its new folder')
+  check(W.search('files').cwd == E .. '/src', 'copied workspace search scope follows project folder')
+  local stored = vim.json.decode(table.concat(vim.fn.readfile(statefile(E)), '\n'))
+  check(stored.buffers[1].name:sub(1, 1) ~= '/' and not stored.buffers[1].name:match('^%a:'), 'project files are stored as relative paths')
+elseif phase == 'migration' then
+  local F = root .. '/F'; vim.fn.mkdir(F, 'p')
+  vim.fn.writefile({ 'legacy checkpoint' }, F .. '/old.txt')
+  local old = root .. '/state/' .. vim.fn.sha256(vim.fn.has('win32') == 1 and F:lower() or F) .. '.json'
+  local contents = vim.json.encode({ version = 1, root = F, buffers = { { key = '1', name = F .. '/old.txt' } }, tabs = {}, searches = {}, preferences = {} })
+  vim.fn.writefile({ contents }, old)
+  assert(W.open(F, { startup = true }))
+  check(named(F .. '/old.txt') > 0 and vim.fn.filereadable(statefile(F)) == 1, 'central checkpoint migrates to project settings')
+  check(vim.fn.readfile(old)[1] == contents, 'migration preserves the original checkpoint')
+  W.search('files').exclude = {}; assert(W.save()); assert(W.open(A)); assert(W.open(F))
+  check(#W.search('files').exclude == 0, 'deliberately cleared excludes stay empty after project switch')
+  vim.cmd('cd ' .. vim.fn.fnameescape(B))
+  check(vim.wait(1000, function() return W.root == B end) and named(F .. '/old.txt') == -1, 'changing global directory switches projects without carrying old tabs')
 elseif phase == 'conflict' then
   assert(W.open(A, { startup = true }))
   local recovery

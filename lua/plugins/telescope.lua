@@ -13,6 +13,8 @@ return {
     { "<leader>fr", "<cmd>Telescope oldfiles<CR>", desc = "Recent files" },
     { "<leader>fg", "<cmd>Telescope live_grep<CR>", desc = "Grep in project" },
     { "<leader>fg", function() require("utils.scoped_find").selection() end, mode = "x", desc = "Grep selected text in project" },
+    { "<leader>ff", function() require("utils.scoped_find").selection('files') end, mode = "x", desc = "Find files using selected text" },
+    { "<leader>f/", function() require("utils.scoped_find").selection('buffer') end, mode = "x", desc = "Find selected text in current file" },
     { "<leader>f/", "<cmd>Telescope current_buffer_fuzzy_find<CR>", desc = "Search in current file" },
     { "<leader>fb", "<cmd>Telescope buffers<CR>", desc = "Buffers" },
     { "<leader>fh", "<cmd>Telescope help_tags<CR>", desc = "Help pages" },

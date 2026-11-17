@@ -1,5 +1,14 @@
 # Changelog
 
+## Project-local workspace recovery
+
+- Store editor checkpoints in each project's `.movim/settings.json`, using relative internal paths. Migrate central checkpoints without deleting recovery copies; restore only the launch folder automatically.
+- Keep safe mouse-driven file closing inside the editor and return the last file to the dashboard. Reuse terminal display numbers after closing sessions.
+- Restore Explorer width after asynchronous rendering and retain expanded folders. Avoid stale dashboard cache callbacks during project switches.
+- Add default report/font exclusions and Visual-mode current-file, file-name and project-text search shortcuts.
+- Collapse type inlay hints to clickable labels, preserving full server-provided types and parameter-name hints.
+- Test recovery across fresh processes and rendered mouse clicks, including Explorer size after restart.
+
 ## In-app updates
 
 - Add dashboard Update movim, Space u U and :MovimUpdate. Download stable releases in the background and apply verified files on the next interactive launch.
