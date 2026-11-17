@@ -18,9 +18,9 @@ return {
     { "<leader>fh", "<cmd>Telescope help_tags<CR>", desc = "Help pages" },
     { "<leader>fc", "<cmd>Telescope command_history<CR>", desc = "Command history" },
     { "<leader>fw", "<cmd>Telescope grep_string<CR>", desc = "Grep word under cursor" },
-    { "<leader>gu", "<cmd>Telescope git_status<CR>", desc = "Git status (unversioned files…)" },
-    { "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "Git commits" },
-    { "<leader>gb", "<cmd>Telescope git_branches<CR>", desc = "Git branches (checkout)" },
+    { "<leader>gu", function() require('utils.git_project').telescope('git_status') end, desc = "Git status (choose project)" },
+    { "<leader>gL", function() require('utils.git_project').telescope('git_commits') end, desc = "Git commits (choose project)" },
+    { "<leader>gb", function() require('utils.git_project').telescope('git_branches') end, desc = "Git branches (choose project)" },
     { "<leader>ss", "<cmd>Telescope lsp_document_symbols<CR>", desc = "Document symbols" },
     { "<leader>sS", "<cmd>Telescope lsp_workspace_symbols<CR>", desc = "Workspace symbols" },
     { "<leader>sk", "<cmd>Telescope keymaps<CR>", desc = "Keymaps" },
@@ -31,6 +31,7 @@ return {
   },
   opts = {
     defaults = {
+      attach_mappings = function(buf, map) return require('utils.search_clear').telescope(buf, map) end,
       prompt_prefix = " ",
       selection_caret = " ",
       path_display = { "smart" },
@@ -43,7 +44,6 @@ return {
         i = {
           ["<C-j>"] = function(...) require("telescope.actions").move_selection_next(...) end,
           ["<C-k>"] = function(...) require("telescope.actions").move_selection_previous(...) end,
-          ["<C-u>"] = function(...) require("telescope.actions").preview_scrolling_up(...) end,
           ["<C-d>"] = function(...) require("telescope.actions").preview_scrolling_down(...) end,
         },
       },
@@ -52,6 +52,15 @@ return {
   config = function(_, opts)
     local t = require("telescope")
     t.setup(opts)
+    -- Builtins such as current_buffer_fuzzy_find replace attach_mappings.
+    vim.api.nvim_create_autocmd('FileType', {
+      group = vim.api.nvim_create_augroup('movim-search-inputs', { clear = true }),
+      pattern = 'TelescopePrompt', callback = function(args)
+        vim.schedule(function()
+          if vim.api.nvim_buf_is_valid(args.buf) then require('utils.search_clear').telescope(args.buf) end
+        end)
+      end,
+    })
     require("utils.scoped_find").install()
     pcall(t.load_extension, "fzf")
     pcall(t.load_extension, "undo")

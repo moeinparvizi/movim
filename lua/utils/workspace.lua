@@ -293,6 +293,7 @@ function M.open(path, options)
     end
     vim.cmd('cd ' .. vim.fn.fnameescape(path)); M.root = path
     states[path] = target or nil
+    if package.loaded['utils.explorer_filter'] then require('utils.explorer_filter').refresh(false) end
     local state = M.current(); local buffers, leaves, conflicts = {}, {}, {}
     for _, item in ipairs(state.buffers) do
       local name = item.name

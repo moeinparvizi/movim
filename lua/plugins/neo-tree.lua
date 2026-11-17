@@ -10,7 +10,7 @@ return {
   dependencies = { "nvim-lua/plenary.nvim", "nvim-tree/nvim-web-devicons", "MunifTanjim/nui.nvim" },
   keys = {
     { "<leader>e", "<cmd>Neotree toggle left<CR>", desc = "File explorer" },
-    { "<leader>ge", "<cmd>Neotree float git_status<CR>", desc = "Git status explorer" },
+    { "<leader>ge", function() require('utils.git_project').tree() end, desc = "Git status explorer (choose project)" },
     { "<leader>be", "<cmd>Neotree float buffers<CR>", desc = "Buffers explorer" },
   },
   opts = {
@@ -20,6 +20,11 @@ return {
     sources = { "filesystem", "buffers", "git_status" },
     enable_diagnostics = true,
     filesystem = {
+      commands = {
+        movim_hide = function(state) require('utils.explorer_filter').hide(state) end,
+        movim_hidden = function() require('utils.explorer_filter').edit() end,
+      },
+      window = { mappings = { ['I'] = 'movim_hide', ['E'] = 'movim_hidden' } },
       follow_current_file = { enabled = true },
       use_libuv_file_watcher = true,
       filtered_items = {
@@ -54,6 +59,7 @@ return {
       },
     },
     event_handlers = {
+      { event = 'state_created', handler = function(state) require('utils.explorer_filter').apply(state) end },
       {
         event = 'neo_tree_window_after_open',
         handler = function(args)

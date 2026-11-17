@@ -31,6 +31,7 @@ if phase == 'write' then
   local files = W.search('files'); files.query, files.cwd, files.exclude = 'one', A .. '/src', { 'node_modules/**', '*.lock' }
   W.search('grep').query = 'hello.*world'
   W.preference('explorer_width', 32, 46); W.preference('terminal_height', 15, 12)
+  W.preference('explorer_hidden', {}, { 'dist', '*.log' })
   check(W.save(), 'save unsaved buffers and layout')
   check(vim.fn.readfile(A .. '/one.txt')[1] == 'disk', 'workspace save never overwrites source files')
   local before = vim.uv.fs_stat(statefile(A)).mtime
@@ -65,6 +66,7 @@ elseif phase == 'read' then
   check(W.search('files').query == 'one' and #W.search('files').exclude == 2 and W.search('files').cwd == A .. '/src', 'find query, scope and exclusions survive restart')
   check(W.search('grep').query == 'hello.*world', 'grep has independent persistent state')
   check(W.preference('explorer_width', 32) == 46 and W.preference('terminal_height', 15) == 12, 'explorer and terminal sizes survive restart')
+  check(vim.deep_equal(W.preference('explorer_hidden', {}), { 'dist', '*.log' }), 'hidden explorer names survive application restart')
   assert(W.open(B)); vim.cmd('edit ' .. vim.fn.fnameescape(B .. '/other.txt'))
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'B unsaved' }); W.search('files').query = 'other'
   assert(W.save()); assert(W.open(A))

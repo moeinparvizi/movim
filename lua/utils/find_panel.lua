@@ -102,6 +102,10 @@ local function prompt(s, title, row)
     style = "minimal", border = "rounded", title = title, title_pos = "left", zindex = 100,
   })
   vim.wo[win].winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder"
+  require('utils.search_clear').attach(buf, win, function()
+    if vim.api.nvim_buf_is_valid(buf) then vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' }) end
+    if buf == s.search_buf then vim.v.hlsearch = 0 end
+  end)
   return buf, win
 end
 

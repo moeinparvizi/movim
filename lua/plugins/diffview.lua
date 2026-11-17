@@ -6,7 +6,7 @@ return {
   cmd = { "DiffviewOpen", "DiffviewFileHistory", "DiffviewClose", "DiffviewToggleFiles" },
   dependencies = { "nvim-lua/plenary.nvim" },
   keys = {
-    { "<leader>gd", "<cmd>DiffviewOpen<CR>", desc = "Git status (diff view)" },
+    { "<leader>gd", function() require('utils.git_project').diff() end, desc = "Git status (choose project)" },
     { "<leader>gf", "<cmd>DiffviewFileHistory %<CR>", desc = "File history" },
     { "<leader>gF", "<cmd>DiffviewFileHistory<CR>", desc = "Repo history" },
     { "<leader>gq", "<cmd>DiffviewClose<CR>", desc = "Close diff view" },

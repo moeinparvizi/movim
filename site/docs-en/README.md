@@ -57,6 +57,10 @@ Press `Space` to open the shortcut menu. Use the file explorer to browse a proje
 
 Find files or search text in a selected folder and exclude paths from results. Flash speeds up navigation. The file explorer supports creating, renaming and deleting files. Bookmarks help return to places in a project. Additional shortcuts are listed below; press `Space` and pause to explore the available commands.
 
+Click **×** at the right of a search input or press **Ctrl+U** to clear the entire query and keep typing. This works in file search, project grep, in-file fuzzy search and Find/Replace. Clearing persistent search inputs saves the empty query. Ctrl+U replaces Telescope's preview-scroll-up shortcut; Ctrl+D selects the search folder in Find Files/Grep.
+
+In Neo-tree, press **I** on a file/folder to hide entries with that name in the current workspace. Press **E** to edit comma-separated names and globs such as `dist, *.log, coverage`; use names, not paths. Empty the list to reset custom exclusions; the default node_modules filter remains. Filters persist independently per workspace across restarts. **H** temporarily toggles filtered items. This never deletes files, and search exclusions (Ctrl+X) are configured separately.
+
 ## Editing and language tools
 
 Completion, diagnostics, hover, definition and rename use language servers. Install the relevant language server and project dependencies for your language. Rename depends on server support; cross-file and template changes vary by server and project. Treesitter, formatting, linting, multiple cursors and snippets are also available.
@@ -65,7 +69,11 @@ Completion, diagnostics, hover, definition and rename use language servers. Inst
 
 Use the task panel to run available project tasks and scripts. The terminal panel supports multiple sessions and split views. Debugging requires a configured debugger and project-specific setup.
 
+Task output opens in its own terminal split without adding an empty `[No Name]` file to the buffer list. Reopening output for a running task reuses its terminal.
+
 ## Git
+
+In workspaces containing multiple repositories, `Space gg` (lazygit), `Space gd` (Diffview), `Space ge` (Git tree) and `Space gu/gL/gb` (Git pickers) ask which project to open. `Space gc` remains the commit action. A single repository opens directly; cancel leaves the editor unchanged. Selection does not change the workspace working directory. Discovery includes the parent repository, the current file's repository and child repositories up to three levels deep, scanning at most 3,000 folders in batches. Dependencies/output folders such as node_modules, vendor, dist and build are skipped. Open a deeper project's folder as a workspace to work with it.
 
 `Space gp` lets you select a remote branch to pull into the current branch. Conflicts can be inspected with the available diff tools. Review changes before choosing which side to keep. Git must be installed and the project must be a Git repository.
 

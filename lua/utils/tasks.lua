@@ -256,7 +256,8 @@ local function output(run)
     and vim.b[vim.api.nvim_win_get_buf(win)].nemovim_task then
     vim.api.nvim_set_current_win(win)
   else
-    vim.cmd("botright 12new")
+    -- Split the existing buffer; :new leaves a listed empty buffer behind.
+    vim.cmd("botright 12split")
     panel.output_win = vim.api.nvim_get_current_win()
   end
   vim.api.nvim_win_set_buf(0, run.buf)

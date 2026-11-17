@@ -38,6 +38,7 @@ end
 function M.attach(prompt_bufnr, map, state, kind)
   local actions, action_state = require('telescope.actions'), require('telescope.actions.state')
   local picker = action_state.get_current_picker(prompt_bufnr)
+  require('utils.search_clear').telescope(prompt_bufnr, map)
   state = state or workspace().search(kind or 'files'); state.kind = kind or state.kind or 'files'
   local function remember()
     if vim.api.nvim_buf_is_valid(prompt_bufnr) then
