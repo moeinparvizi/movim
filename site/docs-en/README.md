@@ -77,6 +77,8 @@ In workspaces containing multiple repositories, `Space gg` (lazygit), `Space gd`
 
 `Space gp` lets you select a remote branch to pull into the current branch. Conflicts can be inspected with the available diff tools. Review changes before choosing which side to keep. Git must be installed and the project must be a Git repository.
 
+Repository validation runs in the background so Git cannot block editor input. Errors include Git's diagnostic output. Switching workspaces while validation is pending cancels opening the previous selection.
+
 ## Themes and bookmarks
 
 Use `Space ut` to browse and select themes. Theme selection persists. Bookmarks and local history provide ways to return to important locations and earlier saved snapshots.

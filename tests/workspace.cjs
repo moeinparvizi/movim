@@ -35,7 +35,7 @@ try {
       PATH: [path.dirname(process.execPath), path.join(workspace, '.tools/bin'), process.env.PATH].join(path.delimiter) };
     const command = "lua vim.schedule(function() local ok, err = pcall(dofile, 'tests/workspace-ui.lua'); if not ok then print(err); vim.cmd('cquit 1') end end)";
     const result = spawnSync(nvim, ['--headless', '-u', path.join(root, 'init.lua'), '-c', command], {
-      cwd: root, env, encoding: 'utf8', timeout: 45000,
+      cwd: root, env, encoding: 'utf8', timeout: 70000,
     });
     process.stdout.write((result.stdout || '') + (result.stderr || ''));
     if (result.error) throw result.error;

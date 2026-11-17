@@ -149,21 +149,24 @@ for _, dir in ipairs({ 'A', 'B' }) do
 end
 assert(W.open(root)); local cwd_before = vim.fn.getcwd()
 local select_before, selected, cancelled = vim.ui.select, nil, false
+local notify_before, git_notice = vim.notify, ''
+vim.notify = function(message) git_notice = tostring(message) end
 vim.ui.select = function(items, _, callback)
   check(vim.tbl_contains(items, root .. '/A') and vim.tbl_contains(items, root .. '/B'), 'Git picker discovers both repositories in parent workspace')
   callback(root .. '/B')
 end
 require('utils.git_project').choose(function(path) selected = vim.fs.normalize(path) end)
-assert(vim.wait(3000, function() return selected ~= nil end))
+assert(vim.wait(12000, function() return selected ~= nil end), 'Git selection did not finish: ' .. git_notice)
 check(selected == root .. '/B' and vim.fn.getcwd() == cwd_before, 'Git selection targets chosen repository without changing workspace cwd')
 local git_status, git_options = builtin.git_status, nil
 builtin.git_status = function(options) git_options = options end
 require('utils.git_project').telescope('git_status')
-assert(vim.wait(3000, function() return git_options ~= nil end)); builtin.git_status = git_status
+assert(vim.wait(12000, function() return git_options ~= nil end), 'Git status did not finish: ' .. git_notice); builtin.git_status = git_status
 check(vim.fs.normalize(git_options.cwd):gsub('/$', '') == root .. '/B', 'Git status receives the chosen child repository')
 vim.ui.select = function(_, _, callback) callback(nil); cancelled = true end
 require('utils.git_project').choose(function() error('Cancelled Git picker opened a repository') end)
 assert(vim.wait(3000, function() return cancelled end)); vim.ui.select = select_before
+vim.notify = notify_before
 check(vim.v.errmsg == '', 'full editor integration has no Neovim errors: ' .. vim.v.errmsg)
 W.stopped = true
 print('PASS workspace UI integration with real Telescope, Neo-tree and terminal jobs')

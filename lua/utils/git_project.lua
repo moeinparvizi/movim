@@ -20,9 +20,17 @@ function M.choose(callback)
     table.sort(found)
     local function select(path)
       if not path then return end
-      local result = vim.system({ 'git', '-C', path, 'rev-parse', '--show-toplevel' }, { text = true }):wait()
-      if result.code ~= 0 then return vim.notify('Repository is unavailable: ' .. path, vim.log.levels.WARN) end
-      callback(vim.trim(result.stdout))
+      local ok, err = pcall(vim.system, { 'git', '-C', path, 'rev-parse', '--show-toplevel' },
+        { text = true, timeout = 10000 }, function(result)
+          vim.schedule(function()
+            if result.code ~= 0 then
+              return vim.notify('Repository is unavailable: ' .. path .. '\n' .. vim.trim(result.stderr or ''), vim.log.levels.WARN)
+            end
+            if (require('utils.workspace').root or vim.fn.getcwd()) ~= root then return end
+            callback(vim.trim(result.stdout))
+          end)
+        end)
+      if not ok then vim.notify('Cannot start Git: ' .. tostring(err), vim.log.levels.ERROR) end
     end
     if #found == 0 then return vim.notify('No Git repositories found in this workspace (search depth: 3)', vim.log.levels.WARN) end
     if #found == 1 then return select(found[1]) end
