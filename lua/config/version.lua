@@ -1,2 +1,2 @@
 -- Set this to the version shipped in each release and installer.
-return '1.1.16'
+return '1.1.17'
