@@ -2,6 +2,33 @@
 local M = {}
 local skip = { ['.git'] = true, node_modules = true, vendor = true, ['.isolated'] = true,
   ['.tools'] = true, ['.cache'] = true, ['.venv'] = true, target = true, build = true, dist = true }
+-- Pull scans the entire workspace, including nested repositories and worktrees.
+-- Never follow directory symlinks: they may escape the workspace or form loops.
+function M.discover_all(root, callback)
+  local queue, index, found, errors = { root }, 1, {}, {}
+  local parent = vim.fs.root(root, '.git')
+  if parent and vim.fs.normalize(parent) ~= vim.fs.normalize(root) then found[#found + 1] = parent end
+  local function batch()
+    local last = index + 39
+    while index <= #queue and index <= last do
+      local path = queue[index]; index = index + 1
+      local handle, err = vim.uv.fs_scandir(path)
+      if handle then
+        while true do
+          local name, kind = vim.uv.fs_scandir_next(handle)
+          if not name then break end
+          if name == '.git' and (kind == 'directory' or kind == 'file') then
+            found[#found + 1] = path
+          elseif kind == 'directory' and name ~= '.git' then
+            queue[#queue + 1] = vim.fs.joinpath(path, name)
+          end
+        end
+      else errors[#errors + 1] = path .. ': ' .. tostring(err) end
+    end
+    if index <= #queue then vim.schedule(batch) else table.sort(found); callback(found, errors) end
+  end
+  vim.schedule(batch)
+end
 function M.choose(callback)
   local root = require('utils.workspace').root or vim.fn.getcwd()
   local queue, index, found, seen = { { root, 0 } }, 1, {}, {}

@@ -45,7 +45,7 @@ Press `Space` to open the shortcut menu. Use the file explorer to browse a proje
 | `Space fg` | Search text in the project |
 | `Space rt` | Open project tasks |
 | `Space ut` | Browse themes |
-| `Space gp` | Select a remote branch and pull |
+| `Space gp` | Pull all workspace repositories or select a remote branch |
 | `Space gg` | Open lazygit |
 | `Space hl` / `Space hu` | Local history / undo tree |
 | `gd` | Go to definition |
@@ -75,7 +75,7 @@ Task output opens in its own terminal split without adding an empty `[No Name]` 
 
 In workspaces containing multiple repositories, `Space gg` (lazygit), `Space gd` (Diffview), `Space ge` (Git tree) and `Space gu/gL/gb` (Git pickers) ask which project to open. `Space gc` remains the commit action. A single repository opens directly; cancel leaves the editor unchanged. Selection does not change the workspace working directory. Discovery includes the parent repository, the current file's repository and child repositories up to three levels deep, scanning at most 3,000 folders in batches. Dependencies/output folders such as node_modules, vendor, dist and build are skipped. Open a deeper project's folder as a workspace to work with it.
 
-`Space gp` lets you select a remote branch to pull into the current branch. Conflicts can be inspected with the available diff tools. Review changes before choosing which side to keep. Git must be installed and the project must be a Git repository.
+`Space gp` offers **Pull all workspace repositories** and the existing single-branch picker. The workspace option scans all nested folders (including worktrees and dependency folders), without following directory symlinks, then pulls repositories sequentially using each current branch's configured upstream. If the workspace is inside a repository, its containing repository is included. It merges without automatically stashing local changes; repositories with unsaved editor buffers, existing Git operations, missing upstreams, authentication errors or blocking local edits are reported and skipped. Git credentials must already be configured. A conflict popup lets you open Diffview and stop, continue with the remaining repositories, or stop. In Diffview choose the conflict under the cursor with `Space cm`, save and stage the file, then use `:Gcontinue`. If you continue past a conflict, open that repository later with `Space gd`. No conflict is resolved automatically. A summary reports successes and errors; switching workspaces cancels the remaining pulls. The single-branch option still supports choosing a remote branch and uses autostash as described in the Persian Git guide.
 
 Repository validation runs in the background so Git cannot block editor input. Errors include Git's diagnostic output. Switching workspaces while validation is pending cancels opening the previous selection.
 

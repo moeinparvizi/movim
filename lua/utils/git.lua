@@ -156,7 +156,7 @@ local function choose_branch(cwd, branch, remote)
   end)
 end
 
-function M.smart_pull()
+function M.single_pull()
   if not in_repo() then return notify("Not inside a git repository", vim.log.levels.WARN) end
   local cwd = root()
   local branch = current_branch(cwd)
@@ -171,6 +171,79 @@ function M.smart_pull()
   vim.ui.select(remotes, { prompt = "Remote to pull into " .. branch .. ":" }, function(remote)
     if remote then choose_branch(cwd, branch, remote) end
   end)
+end
+
+local workspace_pull_running = false
+function M.pull_workspace()
+  if workspace_pull_running then return notify("A workspace pull is already running", vim.log.levels.WARN) end
+  if vim.fn.executable('git') ~= 1 then return notify("Git is not available in PATH", vim.log.levels.ERROR) end
+  local workspace = require('utils.workspace').root or vim.fn.getcwd()
+  workspace_pull_running = true
+  notify("Finding Git repositories in " .. workspace .. "…")
+  require('utils.git_project').discover_all(workspace, function(repos, scan_errors)
+    if (require('utils.workspace').root or vim.fn.getcwd()) ~= workspace then
+      workspace_pull_running = false
+      return notify("Workspace changed; pull cancelled", vim.log.levels.WARN)
+    end
+    if #repos == 0 then workspace_pull_running = false; return notify("No repositories found" .. (#scan_errors > 0 and ("; scan errors:\n" .. table.concat(scan_errors, "\n")) or ""), vim.log.levels.WARN) end
+    local index, successes, problems = 0, 0, scan_errors
+    local function finish()
+      workspace_pull_running = false
+      local remaining = #repos - index
+      local summary = ("Workspace pull: %d updated, %d need attention, %d not attempted."):format(successes, #problems, remaining)
+      if #problems > 0 then summary = summary .. "\n" .. table.concat(problems, "\n") end
+      notify(summary, #problems > 0 and vim.log.levels.WARN or vim.log.levels.INFO)
+    end
+    local next_repo
+    next_repo = function()
+      if (require('utils.workspace').root or vim.fn.getcwd()) ~= workspace then
+        problems[#problems + 1] = "Workspace changed; remaining pulls cancelled"
+        return finish()
+      end
+      index = index + 1
+      if index > #repos then index = #repos; return finish() end
+      local cwd = repos[index]
+      local function skip(reason)
+        problems[#problems + 1] = cwd .. ": " .. reason
+        vim.schedule(next_repo)
+      end
+      if pulling[cwd] then return skip("pull already running") end
+      if unsaved_in(cwd) then return skip("save modified editor buffers first") end
+      if operation(cwd) or conflicted(cwd) then return skip("finish the existing Git operation first") end
+      if not current_branch(cwd) then return skip("detached HEAD or invalid repository") end
+      pulling[cwd] = true
+      notify(("Pulling %d/%d: %s"):format(index, #repos, cwd))
+      async_git(cwd, { "pull", "--no-rebase", "--no-autostash", "--no-edit", "--no-recurse-submodules" }, function(result)
+        pulling[cwd] = nil
+        vim.cmd("checktime")
+        pcall(function() require("gitsigns").refresh() end)
+        if conflicted(cwd) then
+          problems[#problems + 1] = cwd .. ": conflicts need resolution"
+          return vim.ui.select({ "Review conflicts and stop", "Continue with remaining repositories", "Stop" },
+            { prompt = "Pull conflict in " .. cwd .. ":" }, function(choice)
+              if choice == "Review conflicts and stop" then resolve_notice(cwd); finish()
+              elseif choice == "Continue with remaining repositories" then next_repo()
+              else finish() end
+            end)
+        end
+        if result.code == 0 then successes = successes + 1
+        else
+          local output = vim.trim((result.stderr or "") .. "\n" .. (result.stdout or ""))
+          problems[#problems + 1] = cwd .. ": " .. output:sub(1, 500)
+        end
+        next_repo()
+      end)
+    end
+    next_repo()
+  end)
+end
+
+function M.smart_pull()
+  vim.ui.select({ "Pull all workspace repositories", "Pull a selected remote branch" },
+    { prompt = "Git pull:" }, function(choice)
+      if choice == "Pull all workspace repositories" then M.pull_workspace()
+      elseif choice == "Pull a selected remote branch" then M.single_pull() end
+    end)
 end
 
 -- Continue/abort only the operation Git actually has in progress.

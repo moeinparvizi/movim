@@ -7,7 +7,7 @@ return {
     -------------------------------------------------------------
     -- Git (WebStorm: Ctrl+T update, Ctrl+K commit, push, shelve)
     -------------------------------------------------------------
-    vim.keymap.set("n", "<leader>gp", function() require("utils.git").smart_pull() end, { desc = "Pull selected remote branch" })
+    vim.keymap.set("n", "<leader>gp", function() require("utils.git").smart_pull() end, { desc = "Pull workspace or selected branch" })
     vim.keymap.set("n", "<leader>cm", function() require("utils.git").choose_conflict() end, { desc = "Choose conflict side" })
     vim.keymap.set("n", "<leader>gP", function() require("utils.git").push() end, { desc = "Push" })
     vim.keymap.set("n", "<leader>gc", function() require("utils.git").commit(false) end, { desc = "Commit staged…" })

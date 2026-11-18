@@ -65,6 +65,9 @@ jobs:
       - name: Build Windows and macOS packages from the same checkout
         shell: powershell
         run: ./neovim/installer/build-installers.ps1
+      - name: Test workspace Git pull and conflicts
+        shell: powershell
+        run: node neovim/tests/git-pull.cjs "$env:GITHUB_WORKSPACE/.tools/nvim-win64/bin/nvim.exe"
       - name: Install and validate in a fresh directory
         shell: powershell
         run: |
