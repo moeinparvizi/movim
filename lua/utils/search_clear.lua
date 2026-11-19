@@ -6,10 +6,11 @@ function M.telescope(buf, map)
   if not picker or not picker.prompt_win or not vim.api.nvim_win_is_valid(picker.prompt_win) then return true end
   vim.b[buf].movim_clear_attached = true
   M.attach(buf, picker.prompt_win, function() picker:set_prompt('') end, map,
-    function() require('telescope.actions').mouse_click(buf) end)
+    function() require('telescope.actions').mouse_click(buf) end,
+    function() require('telescope.actions').double_mouse_click(buf) end)
   return true
 end
-function M.attach(buf, win, clear, map, mouse_fallback)
+function M.attach(buf, win, clear, map, mouse_fallback, double_mouse_fallback)
   map = map or function(mode, key, callback)
     vim.keymap.set(mode, key, callback, { buffer = buf, silent = true, desc = 'Clear input' })
   end
@@ -37,12 +38,18 @@ function M.attach(buf, win, clear, map, mouse_fallback)
   -- result/preview handling everywhere else.
   if mouse_fallback then
     for _, mode in ipairs({ 'i', 'n' }) do
-      map(mode, '<LeftMouse>', function()
-        if vim.fn.getmousepos().winid == button_win then click() else mouse_fallback() end
-      end)
+      for _, item in ipairs({ { '<LeftMouse>', mouse_fallback }, { '<2-LeftMouse>', double_mouse_fallback },
+        { '<3-LeftMouse>', mouse_fallback }, { '<4-LeftMouse>', mouse_fallback } }) do
+        map(mode, item[1], function()
+          if vim.fn.getmousepos().winid == button_win then click()
+          elseif item[2] then item[2]() end
+        end)
+      end
     end
   end
-  vim.keymap.set({ 'n', 'i' }, '<LeftMouse>', click, { buffer = button, silent = true })
+  for _, key in ipairs({ '<LeftMouse>', '<2-LeftMouse>', '<3-LeftMouse>', '<4-LeftMouse>' }) do
+    vim.keymap.set({ 'n', 'i' }, key, click, { buffer = button, silent = true })
+  end
   vim.api.nvim_create_autocmd('BufEnter', { buffer = button, callback = function() vim.schedule(click) end })
   local group = vim.api.nvim_create_augroup('movim-search-clear-' .. buf, { clear = true })
   vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, { group = group, callback = function()

@@ -115,6 +115,11 @@ local ok, err = pcall(function()
     ]]) end)
     if not cleared then print(vim.inspect(lua([[return {mouse=vim.fn.getmousepos(), win=vim.api.nvim_get_current_win(), ft=vim.bo.filetype, mode=vim.fn.mode(), messages=vim.api.nvim_exec2('messages',{output=true}).output}]]))) end
     check(cleared, kind .. ' clear button works with a real mouse click')
+    -- Refill and click at the same coordinates immediately to exercise the
+    -- double-click mapping used when consecutive pickers open quickly.
+    lua([[require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()):set_prompt('again')]])
+    mouse(button[1], button[2])
+    check(vim.wait(1000, function() return lua([[local p=require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); return p and p:_get_prompt()=='' ]]) end), kind .. ' clear button handles consecutive clicks')
     lua([[local p=require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); require('telescope.actions').close(p.prompt_bufnr)]])
     vim.wait(50)
     lua([[require('telescope.builtin')[...]()]], kind)
