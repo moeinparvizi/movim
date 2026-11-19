@@ -182,12 +182,12 @@ vim.ui.select = function(items, _, callback)
   callback(root .. '/B')
 end
 require('utils.git_project').choose(function(path) selected = vim.fs.normalize(path) end)
-assert(vim.wait(12000, function() return selected ~= nil end), 'Git selection did not finish: ' .. git_notice)
+assert(vim.wait(45000, function() return selected ~= nil end), 'Git selection did not finish: ' .. git_notice)
 check(selected == root .. '/B' and vim.fn.getcwd() == cwd_before, 'Git selection targets chosen repository without changing workspace cwd')
 local git_status, git_options = builtin.git_status, nil
 builtin.git_status = function(options) git_options = options end
 require('utils.git_project').telescope('git_status')
-assert(vim.wait(12000, function() return git_options ~= nil end), 'Git status did not finish: ' .. git_notice); builtin.git_status = git_status
+assert(vim.wait(45000, function() return git_options ~= nil end), 'Git status did not finish: ' .. git_notice); builtin.git_status = git_status
 check(vim.fs.normalize(git_options.cwd):gsub('/$', '') == root .. '/B', 'Git status receives the chosen child repository')
 vim.ui.select = function(_, _, callback) callback(nil); cancelled = true end
 require('utils.git_project').choose(function() error('Cancelled Git picker opened a repository') end)

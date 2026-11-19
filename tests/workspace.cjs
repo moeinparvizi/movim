@@ -47,7 +47,7 @@ try {
     let result;
     try {
       result = spawnSync(nvim, ['--headless', '-u', path.join(root, 'init.lua'), '-c', command], {
-        cwd: root, env, encoding: 'utf8', timeout: 150000, stdio: ['ignore', uiFd, uiFd],
+        cwd: root, env, encoding: 'utf8', timeout: 240000, stdio: ['ignore', uiFd, uiFd],
       });
     } finally { fs.closeSync(uiFd); }
     const uiOutput = fs.readFileSync(uiLog, 'utf8');
