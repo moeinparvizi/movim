@@ -58,7 +58,11 @@ return {
   {
     "rcarriga/nvim-notify",
     event = "VeryLazy",
-    opts = { timeout = 2500, max_width = 60, stages = "fade_in_slide_out" },
+    -- Smooth notification transitions with a bounded redraw rate and no queue
+    -- of identical messages when a background task reports repeatedly.
+    opts = function()
+      return { timeout = 2500, max_width = 60, stages = vim.g.movim_reduce_motion and 'static' or 'fade', fps = 24, merge_duplicates = true }
+    end,
     config = function(_, opts)
       local notify = require("notify")
       notify.setup(opts)

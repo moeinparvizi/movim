@@ -18,6 +18,7 @@ end
 
 -- Bootstrap everything
 require("config.options")
+require("utils.angular").setup()
 vim.cmd.colorscheme("movim")
 require("config.lazy")
 require("config.keymaps")

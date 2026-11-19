@@ -146,6 +146,7 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "WinEnter" }, {
     group = group,
     callback = function()
+      if not enabled or vim.o.termbidi or not vim.o.arabicshape or vim.bo.buftype ~= '' or vim.wo.rightleft or vim.wo.diff or vim.wo.wrap then return end
       local win = vim.api.nvim_get_current_win()
       local cursor = vim.api.nvim_win_get_cursor(win)
       local line = vim.api.nvim_get_current_line()
@@ -155,13 +156,18 @@ function M.setup()
           if cursor[2] >= run.start_col and cursor[2] < run.end_col then inside = true; break end
         end
       end
-      if cursor_inside[win] ~= inside then
+      if (cursor_inside[win] or false) ~= inside then
         cursor_inside[win] = inside
         vim.cmd("redraw!")
       end
     end,
   })
-  vim.api.nvim_create_autocmd("ModeChanged", { group = group, callback = function() vim.cmd("redraw!") end })
+  vim.api.nvim_create_autocmd("ModeChanged", { group = group, callback = function(args)
+    -- Only Visual/Select transitions change the decoration provider's output.
+    local old, new = args.match:match('^(.-):(.*)$')
+    local function selection(mode) return mode and mode:match('^[vV\22sS\19]') end
+    if enabled and not vim.o.termbidi and (selection(old) or selection(new)) then vim.cmd('redraw!') end
+  end })
   vim.api.nvim_create_user_command("PersianDisplayToggle", function()
     enabled = not enabled
     vim.cmd("redraw!")

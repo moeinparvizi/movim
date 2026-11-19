@@ -1,0 +1,17 @@
+vim.opt.rtp:prepend(vim.fn.getcwd())
+require('utils.angular').setup()
+assert(vim.filetype.match({ filename = 'demo.component.html' }) == 'htmlangular')
+local project = vim.fn.tempname()
+vim.fn.mkdir(project, 'p')
+vim.fn.writefile({ '{}' }, project .. '/angular.json')
+assert(vim.filetype.match({ filename = project .. '/custom-template.html' }) == 'htmlangular', 'Angular project templates are detected')
+vim.fn.delete(project, 'rf')
+local buf = vim.api.nvim_create_buf(false, true)
+vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+  '@if (ready) {', '  <mat-button [disabled]="busy" (click)="save()">Save</mat-button>', '}',
+})
+local parser = assert(vim.treesitter.get_parser(buf, 'angular'))
+local tree = parser:parse()[1]:root()
+assert(not tree:has_error(), 'Angular parser rejected template: ' .. tree:sexpr())
+print('PASS native Angular parser: ' .. vim.uv.os_uname().sysname .. ' ' .. jit.arch)
+vim.cmd('qa!')

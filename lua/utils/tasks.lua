@@ -256,9 +256,11 @@ local function output(run)
     and vim.b[vim.api.nvim_win_get_buf(win)].nemovim_task then
     vim.api.nvim_set_current_win(win)
   else
-    -- Split the existing buffer; :new leaves a listed empty buffer behind.
-    vim.cmd("botright 12split")
+    -- Split the bottom task area so output stays to the left of the list.
+    if valid_panel() then vim.api.nvim_set_current_win(panel.win) end
+    vim.cmd("leftabove vsplit")
     panel.output_win = vim.api.nvim_get_current_win()
+    if valid_panel() then vim.api.nvim_win_set_width(panel.win, math.min(42, math.floor(vim.o.columns / 2))) end
   end
   vim.api.nvim_win_set_buf(0, run.buf)
 end
@@ -312,6 +314,13 @@ end
 
 function M.toggle()
   if valid_panel() then
+    local output_win = panel.output_win
+    if output_win and vim.api.nvim_win_is_valid(output_win) and output_win ~= panel.win
+      and vim.api.nvim_win_get_tabpage(output_win) == vim.api.nvim_win_get_tabpage(panel.win)
+      and vim.b[vim.api.nvim_win_get_buf(output_win)].nemovim_task then
+      vim.api.nvim_win_close(output_win, true)
+    end
+    panel.output_win = nil
     if #vim.api.nvim_tabpage_list_wins(0) == 1 then
       vim.api.nvim_win_set_buf(panel.win, vim.api.nvim_create_buf(true, false))
     else
@@ -323,14 +332,14 @@ function M.toggle()
   local file = vim.api.nvim_buf_get_name(0)
   if vim.bo.buftype ~= "" then file = "" end
   panel.file, panel.root, panel.origin = file, project_root(file), vim.api.nvim_get_current_win()
-  vim.cmd("topleft 42vnew")
+  vim.cmd("botright 12new")
   panel.win, panel.buf = vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf()
   vim.bo[panel.buf].buftype, vim.bo[panel.buf].bufhidden, vim.bo[panel.buf].swapfile = "nofile", "wipe", false
   vim.bo[panel.buf].buflisted = false
   vim.bo[panel.buf].filetype = "nemovim-tasks"
   vim.wo[panel.win].number, vim.wo[panel.win].relativenumber = false, false
   vim.wo[panel.win].signcolumn, vim.wo[panel.win].foldcolumn, vim.wo[panel.win].wrap = "no", "0", false
-  vim.wo[panel.win].winfixwidth = true
+  vim.wo[panel.win].winfixheight = true
   vim.api.nvim_create_autocmd("BufEnter", { buffer = panel.buf, callback = function() vim.schedule(refresh) end })
   local function map(key, fn, desc) vim.keymap.set("n", key, fn, { buffer = panel.buf, silent = true, desc = desc }) end
   map("<CR>", function() local task = selected(); if task then run(task) end end, "Run selected task")

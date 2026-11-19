@@ -65,11 +65,13 @@ In Neo-tree, press **I** on a file/folder to hide entries with that name in the 
 
 Completion, diagnostics, hover, definition and rename use language servers. Install the relevant language server and project dependencies for your language. Rename depends on server support; cross-file and template changes vary by server and project. Treesitter, formatting, linting, multiple cursors and snippets are also available.
 
+Angular `*.component.html` templates, HTML files under an `angular.json` project and inline `@Component` templates use a bundled Angular parser for control flow such as `@if`, bindings, calls and Material tags. The selected theme supplies the colors; completion and diagnostics still require the Angular language server and project dependencies. Parsers are bundled for Windows x64, macOS Intel/Apple Silicon and Linux x64/ARM64; unsupported architectures fall back to HTML highlighting.
+
 ## Tasks, terminals and debugging
 
 Use the task panel to run available project tasks and scripts. The terminal panel supports multiple sessions and split views. Debugging requires a configured debugger and project-specific setup.
 
-Task output opens in its own terminal split without adding an empty `[No Name]` file to the buffer list. Reopening output for a running task reuses its terminal.
+The task panel opens at the bottom; once a task runs, its list is on the right and terminal output is on the left. Each task has its own terminal without adding an empty `[No Name]` file. Reopening a running task reuses its terminal.
 
 ## Git
 
@@ -80,6 +82,8 @@ In workspaces containing multiple repositories, `Space gg` (lazygit), `Space gd`
 Repository validation runs in the background so Git cannot block editor input. Errors include Git's diagnostic output. Switching workspaces while validation is pending cancels opening the previous selection.
 
 ## Themes and bookmarks
+
+Notifications use a restrained fade at 24 frames per second. Set `vim.g.movim_reduce_motion = true` in `user.lua` and restart to show notifications without animation. This setting does not change the terminal or personal plugins.
 
 Use `Space ut` to browse and select themes. Theme selection persists. Bookmarks and local history provide ways to return to important locations and earlier saved snapshots.
 

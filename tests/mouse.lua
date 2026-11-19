@@ -90,6 +90,38 @@ local ok, err = pcall(function()
     vim.cmd('redraw')
   ]], repo)
   vim.wait(400)
+  for _, kind in ipairs({ 'find_files', 'live_grep' }) do
+    lua([[
+      local kind = ...
+      require('lazy').load({ plugins = { 'telescope.nvim' } })
+      require('telescope.builtin')[kind]({ default_text = 'clear this query' })
+    ]], kind)
+    check(vim.wait(3000, function() return lua([[return vim.bo.filetype == 'TelescopePrompt']]) end), kind .. ' opened')
+    vim.wait(100)
+    local button = lua([[
+      local prompt = vim.api.nvim_get_current_win()
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local c = vim.api.nvim_win_get_config(win)
+        if c.win == prompt and vim.api.nvim_win_get_width(win) == 3 then
+          local p=vim.fn.win_screenpos(win); return { p[1], p[2]+1 }
+        end
+      end
+    ]])
+    assert(button, kind .. ' clear button missing')
+    mouse(button[1], button[2])
+    local cleared = vim.wait(1000, function() return lua([[
+      local p = require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf())
+      return p and p:_get_prompt() == ''
+    ]]) end)
+    if not cleared then print(vim.inspect(lua([[return {mouse=vim.fn.getmousepos(), win=vim.api.nvim_get_current_win(), ft=vim.bo.filetype, mode=vim.fn.mode(), messages=vim.api.nvim_exec2('messages',{output=true}).output}]]))) end
+    check(cleared, kind .. ' clear button works with a real mouse click')
+    lua([[local p=require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); require('telescope.actions').close(p.prompt_bufnr)]])
+    vim.wait(50)
+    lua([[require('telescope.builtin')[...]()]], kind)
+    check(vim.wait(1500, function() return lua([[local p=require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); return p and p:_get_prompt()=='' ]]) end), kind .. ' clear persists on reopen')
+    lua([[local p=require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); require('telescope.actions').close(p.prompt_bufnr)]])
+    vim.wait(50)
+  end
   local tab = lua([[local text = {}; for col=1,vim.o.columns do text[col]=vim.fn.screenstring(1,col) end return table.concat(text)]])
   local namecol = lua([[for col=1,vim.o.columns-9 do
     local value=''; for offset=0,8 do value=value..vim.fn.screenstring(1,col+offset) end

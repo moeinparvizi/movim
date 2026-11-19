@@ -15,6 +15,8 @@ LSP یعنی Language Server Protocol — همون موتوری که WebStorm ه
 | Python | pyright | |
 | Lua / Bash / Docker | lua_ls, bashls, dockerls | |
 
+قالب‌های `*.component.html` و فایل‌های HTML داخل پروژه‌ای با `angular.json` با دستور زبان Angular رنگ‌آمیزی می‌شوند؛ از جمله `@if`، bindingها، فراخوانی‌ها و تگ‌های Angular Material. قالب‌های inline در `@Component` نیز از parser مربوط استفاده می‌کنند. رنگ نهایی از تم انتخابی می‌آید. parserهای ویندوز x64، مک Intel/Apple Silicon و لینوکس x64/ARM64 همراه نسخه هستند؛ روی معماری‌های دیگر رنگ‌آمیزی HTML جایگزین می‌شود. تکمیل و تشخیص خطا همچنان به Angular language server و وابستگی‌های پروژه نیاز دارد.
+
 ## اتوکامپلیت (blink.cmp)
 
 همین‌طور که تایپ می‌کنید ظاهر می‌شود؛ پنجره مستندات هم کنارش باز است (مثل وب‌استورم).

@@ -40,13 +40,21 @@ try {
       XDG_CACHE_HOME: path.join(scratch, 'editor-cache'),
       PATH: [path.dirname(process.execPath), path.join(workspace, '.tools/bin'), process.env.PATH].join(path.delimiter) };
     const command = "lua vim.schedule(function() local ok, err = pcall(dofile, 'tests/workspace-ui.lua'); if not ok then print(err); vim.cmd('cquit 1') end end)";
-    const result = spawnSync(nvim, ['--headless', '-u', path.join(root, 'init.lua'), '-c', command], {
-      cwd: root, env, encoding: 'utf8', timeout: 70000,
-    });
-    process.stdout.write((result.stdout || '') + (result.stderr || ''));
+    // Terminal child processes on Windows can inherit pipe handles after Neovim
+    // exits. A file captures the same diagnostics without waiting on those pipes.
+    const uiLog = path.join(scratch, 'workspace-ui.log');
+    const uiFd = fs.openSync(uiLog, 'w');
+    let result;
+    try {
+      result = spawnSync(nvim, ['--headless', '-u', path.join(root, 'init.lua'), '-c', command], {
+        cwd: root, env, encoding: 'utf8', timeout: 150000, stdio: ['ignore', uiFd, uiFd],
+      });
+    } finally { fs.closeSync(uiFd); }
+    const uiOutput = fs.readFileSync(uiLog, 'utf8');
+    process.stdout.write(uiOutput);
     if (result.error) throw result.error;
     if (result.status !== 0) throw Error('Workspace UI integration failed: status=' + result.status + ', signal=' + result.signal);
-    if (!((result.stdout || '') + (result.stderr || '')).includes('PASS workspace UI integration with real')) throw Error('Editor exited before UI checks completed');
+    if (!uiOutput.includes('PASS workspace UI integration with real')) throw Error('Editor exited before UI checks completed');
     const mouse = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/mouse.lua'], {
       cwd: root, env: { ...env, MOVIM_WORKSPACE_TEST_DIR: scratch }, encoding: 'utf8', timeout: 15000,
     });

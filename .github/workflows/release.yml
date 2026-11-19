@@ -68,6 +68,9 @@ jobs:
       - name: Test workspace Git pull and conflicts
         shell: powershell
         run: node neovim/tests/git-pull.cjs "$env:GITHUB_WORKSPACE/.tools/nvim-win64/bin/nvim.exe"
+      - name: Test Angular templates and themes
+        shell: powershell
+        run: ./neovim/start-webstorm.ps1 --headless -l ./neovim/tests/angular.lua
       - name: Install and validate in a fresh directory
         shell: powershell
         run: |
@@ -177,6 +180,8 @@ jobs:
           export XDG_STATE_HOME="$RUNNER_TEMP/movim-state"
           export XDG_DATA_HOME="$RUNNER_TEMP/movim-data"
           nvim --headless -u NONE -l tests/theme.lua
+          nvim --headless -u NONE -l tests/angular-parser.lua
+          nvim --headless -u NONE -l tests/redraw-performance.lua
           bash -n installer/macos/Install.command
           bash -n installer/linux/Install.sh
           bash -n ai/installer/Install.command

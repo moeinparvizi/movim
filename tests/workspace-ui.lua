@@ -115,16 +115,28 @@ vim.fn.writefile({ vim.json.encode({ version = '2.0.0', tasks = { { label = 'Smo
 api.nvim_set_current_buf(source)
 local tasks = require('utils.tasks'); tasks.toggle()
 local task_buf, task_win = api.nvim_get_current_buf(), api.nvim_get_current_win()
+check(vim.fn.win_screenpos(task_win)[1] > 1, 'task list opens in a bottom panel')
 local lines = api.nvim_buf_get_lines(task_buf, 0, -1, false)
 for row, line in ipairs(lines) do if line:find('Smoke', 1, true) then api.nvim_win_set_cursor(task_win, { row, 0 }); break end end
 local run_task
 for _, mapping in ipairs(api.nvim_buf_get_keymap(task_buf, 'n')) do if mapping.lhs == '<CR>' then run_task = mapping.callback end end
 assert(run_task); run_task(); vim.cmd('stopinsert')
 local output_buf, output_win = api.nvim_get_current_buf(), api.nvim_get_current_win()
+local task_position, output_position = vim.fn.win_screenpos(task_win), vim.fn.win_screenpos(output_win)
+check(task_position[1] == output_position[1] and output_position[2] < task_position[2], 'task output is left of task list in the same bottom panel')
 assert(vim.wait(3000, function() return vim.fn.filereadable(root .. '/A/task-ran.txt') == 1 end), 'Task did not execute in selected project')
 check(vim.bo[output_buf].buftype == 'terminal' and vim.b[output_buf].terminal_job_id ~= nil, 'task output uses a real terminal job')
 check(blank_count() == before, 'real project task runs without creating a No Name buffer')
-api.nvim_win_close(output_win, true); api.nvim_set_current_win(task_win); tasks.toggle()
+tasks.toggle()
+check(not api.nvim_win_is_valid(task_win) and not api.nvim_win_is_valid(output_win), 'closing tasks hides both bottom windows without stopping the terminal')
+tasks.toggle(); task_buf, task_win = api.nvim_get_current_buf(), api.nvim_get_current_win()
+for row, line in ipairs(api.nvim_buf_get_lines(task_buf, 0, -1, false)) do
+  if line:find('Smoke', 1, true) then api.nvim_win_set_cursor(task_win, { row, 0 }); break end
+end
+for _, mapping in ipairs(api.nvim_buf_get_keymap(task_buf, 'n')) do if mapping.lhs == 'o' then mapping.callback(); break end end
+output_win = api.nvim_get_current_win()
+check(api.nvim_get_current_buf() == output_buf and vim.fn.win_screenpos(output_win)[2] < vim.fn.win_screenpos(task_win)[2], 'reopening output reuses the task terminal to the left of the list')
+tasks.toggle()
 T.new(); vim.cmd('stopinsert'); api.nvim_win_set_height(0, 12); T.hide(); T.toggle(); vim.cmd('stopinsert')
 check(api.nvim_win_get_height(0) == 12, 'terminal panel restores resized height')
 T.close()
@@ -205,5 +217,11 @@ check(dashboard ~= nil and treewin() ~= nil, 'closing last file tab keeps explor
 api.nvim_set_current_win(dashboard)
 check(vim.v.errmsg == '', 'full editor integration has no Neovim errors: ' .. vim.v.errmsg)
 W.stopped = true
+-- Test shells are deliberately persistent; close only this fixture's terminal
+-- jobs so Windows child processes cannot keep the test runner's pipes open.
+for _, buf in ipairs(api.nvim_list_bufs()) do
+  local job = vim.b[buf].terminal_job_id
+  if vim.bo[buf].buftype == 'terminal' and job then pcall(vim.fn.jobstop, job) end
+end
 print('PASS workspace UI integration with real Telescope, Neo-tree and terminal jobs')
-vim.cmd('qa!')
+vim.cmd('noautocmd qa!')

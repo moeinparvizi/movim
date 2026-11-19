@@ -17,6 +17,7 @@ return {
         vue = { "prettier", "prettierd", stop_after_first = true },
         svelte = { "prettier", "prettierd", stop_after_first = true },
         html = { "prettier", "prettierd", stop_after_first = true },
+        htmlangular = { "prettier", "prettierd", stop_after_first = true },
         css = { "prettier", "prettierd", stop_after_first = true },
         scss = { "prettier", "prettierd", stop_after_first = true },
         json = { "prettier", "prettierd", stop_after_first = true },

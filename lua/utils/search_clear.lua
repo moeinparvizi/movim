@@ -5,10 +5,11 @@ function M.telescope(buf, map)
   local picker = require('telescope.actions.state').get_current_picker(buf)
   if not picker or not picker.prompt_win or not vim.api.nvim_win_is_valid(picker.prompt_win) then return true end
   vim.b[buf].movim_clear_attached = true
-  M.attach(buf, picker.prompt_win, function() picker:set_prompt('') end, map)
+  M.attach(buf, picker.prompt_win, function() picker:set_prompt('') end, map,
+    function() require('telescope.actions').mouse_click(buf) end)
   return true
 end
-function M.attach(buf, win, clear, map)
+function M.attach(buf, win, clear, map, mouse_fallback)
   map = map or function(mode, key, callback)
     vim.keymap.set(mode, key, callback, { buffer = buf, silent = true, desc = 'Clear input' })
   end
@@ -30,6 +31,16 @@ function M.attach(buf, win, clear, map)
     vim.schedule(function()
       if vim.api.nvim_win_is_valid(win) then vim.api.nvim_set_current_win(win); vim.cmd.startinsert() end
     end)
+  end
+  -- Telescope captures mouse clicks in the prompt buffer before the float can
+  -- receive focus. Route clicks on our button here and preserve its normal
+  -- result/preview handling everywhere else.
+  if mouse_fallback then
+    for _, mode in ipairs({ 'i', 'n' }) do
+      map(mode, '<LeftMouse>', function()
+        if vim.fn.getmousepos().winid == button_win then click() else mouse_fallback() end
+      end)
+    end
   end
   vim.keymap.set({ 'n', 'i' }, '<LeftMouse>', click, { buffer = button, silent = true })
   vim.api.nvim_create_autocmd('BufEnter', { buffer = button, callback = function() vim.schedule(click) end })
