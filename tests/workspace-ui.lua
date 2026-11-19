@@ -224,4 +224,7 @@ for _, buf in ipairs(api.nvim_list_bufs()) do
   if vim.bo[buf].buftype == 'terminal' and job then pcall(vim.fn.jobstop, job) end
 end
 print('PASS workspace UI integration with real Telescope, Neo-tree and terminal jobs')
-vim.cmd('noautocmd qa!')
+-- Workspace exit persistence is covered by separate fresh-process phases.
+-- End this headless fixture directly after stopping its terminal jobs: on some
+-- Windows hosts Neovim can wait indefinitely for a closed pseudoconsole.
+os.exit(0)
