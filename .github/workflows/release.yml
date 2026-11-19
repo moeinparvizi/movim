@@ -64,7 +64,12 @@ jobs:
         run: ./neovim/installer/prepare-windows.ps1
       - name: Build Windows and macOS packages from the same checkout
         shell: powershell
-        run: ./neovim/installer/build-installers.ps1
+        run: |
+          Push-Location neovim/ai/runtime
+          npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'AI runtime installation failed.' }
+          Pop-Location
+          ./neovim/installer/build-installers.ps1
       - name: Test workspace Git pull and conflicts
         shell: powershell
         run: node neovim/tests/git-pull.cjs "$env:GITHUB_WORKSPACE/.tools/nvim-win64/bin/nvim.exe"
@@ -78,6 +83,8 @@ jobs:
           $p = Start-Process ./movim-Setup.exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=""',('/DIR="' + $target + '"')) -WindowStyle Hidden -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Installation failed: $($p.ExitCode)" }
           node neovim/installer/verify-package.cjs "$target/neovim"
+          node neovim/ai/verify.cjs "$target/neovim/ai"
+          if ($LASTEXITCODE -ne 0) { throw 'AI component verification failed.' }
           Expand-Archive ./movim-macOS.zip "$env:RUNNER_TEMP/mac-package"
           node neovim/installer/verify-package.cjs "$env:RUNNER_TEMP/mac-package/movim-macOS/config"
           $env:NVIM_APPNAME = 'inherited-other-app'
@@ -126,30 +133,12 @@ jobs:
           node tests/updates.cjs ../.tools/nvim-win64/bin/nvim.exe
           if ($LASTEXITCODE -ne 0) { throw 'Update recovery failed.' }
           Pop-Location
-      - name: Build and validate separate AI installers
-        shell: powershell
-        run: |
-          ./neovim/ai/build-installers.ps1
-          $target = Join-Path $env:RUNNER_TEMP 'movim AI clean'
-          $p = Start-Process ./neovim/ai/dist/movim-AI-Setup.exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NOICONS','/TASKS=""',('/DIR="' + $target + '"')) -WindowStyle Hidden -Wait -PassThru
-          if ($p.ExitCode -ne 0) { throw "AI installation failed: $($p.ExitCode)" }
-          node neovim/installer/verify-package.cjs "$target/neovim"
-          if ($LASTEXITCODE -ne 0) { throw 'AI base verification failed.' }
-          node neovim/ai/verify.cjs "$target/neovim/ai"
-          if ($LASTEXITCODE -ne 0) { throw 'AI source verification failed.' }
-          & "$target/neovim/start-webstorm.ps1" --headless -l "$env:GITHUB_WORKSPACE/neovim/ai/tests/installed.lua"
-          if ($LASTEXITCODE -ne 0) { throw 'AI installed startup failed.' }
-          Expand-Archive ./neovim/ai/dist/movim-AI-macOS.zip "$env:RUNNER_TEMP/ai-mac-package"
-          node neovim/ai/verify.cjs "$env:RUNNER_TEMP/ai-mac-package/movim-macOS/config/ai"
-          if ($LASTEXITCODE -ne 0) { throw 'AI Mac verification failed.' }
       - uses: actions/upload-artifact@v4
         with:
           name: installers
           path: |
             movim-Setup.exe
             movim-macOS.zip
-            neovim/ai/dist/movim-AI-Setup.exe
-            neovim/ai/dist/movim-AI-macOS.zip
   unix:
     needs: version
     strategy:
@@ -246,9 +235,10 @@ jobs:
           cd assets
           # upload-artifact preserves common-root directories for AI packages.
           find . -mindepth 2 -type f -name 'movim-*' -exec mv {} . \;
+          cp movim-macOS.zip movim-AI-macOS.zip
           sha256sum movim-* > SHA256SUMS
           printf 'Source: %s\n\nAll platform packages and documentation were built from this commit. See the English guide and CHANGELOG.md.\n' "$COMMIT" > notes.md
-          gh release create "v$VERSION" movim-Setup.exe movim-macOS.zip movim-linux.tar.gz movim-AI-Setup.exe movim-AI-macOS.zip SHA256SUMS --target "$COMMIT" --title "movim v$VERSION" --notes-file notes.md --latest
+          gh release create "v$VERSION" movim-Setup.exe movim-macOS.zip movim-linux.tar.gz movim-AI-macOS.zip SHA256SUMS --target "$COMMIT" --title "movim v$VERSION" --notes-file notes.md --latest
       - uses: actions/download-artifact@v4
         with:
           name: website

@@ -29,6 +29,9 @@ if [ ! -f "$CONFIG_DIR/release.json" ]; then
   mkdir -p "$CONFIG_DIR"
   cp -R "$SOURCE/." "$CONFIG_DIR/"
 fi
+if [ ! -d "$CONFIG_DIR/ai/runtime/node_modules" ]; then
+  (cd "$CONFIG_DIR/ai/runtime" && npm ci --ignore-scripts --no-audit --no-fund)
+fi
 if [ -d "$SOURCE/fonts" ]; then
   FONT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/movim"
   mkdir -p "$FONT_DIR"

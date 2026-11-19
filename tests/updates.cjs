@@ -124,6 +124,13 @@ function ai(values) {
   assert.equal(JSON.parse(fs.readFileSync(path.join(aiRoot, 'ai/ai-release.json'))).version, '1.1.11');
   console.log('PASS AI edition updates together and keeps unchanged Pi runtime');
 
+  const unifiedRoot = install('unified-migration', before);
+  await prepare(unifiedRoot, release(ai(after)));
+  assert.equal((await engine.apply(unifiedRoot)).status, 'installed');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(unifiedRoot, 'ai/ai-release.json'))).version, '1.1.11');
+  assert.equal(fs.readFileSync(path.join(unifiedRoot, 'user.lua'), 'utf8'), '-- my preferences');
+  console.log('PASS standard installation gains AI and preserves personal settings');
+
   const runtimeRoot = install('ai-runtime', ai(before));
   write(path.join(runtimeRoot, 'ai/runtime/node_modules/old.txt'), 'old Pi dependency');
   const changedRuntime = ai(after);

@@ -98,7 +98,9 @@ local ok, err = pcall(function()
     ]], kind)
     check(vim.wait(3000, function() return lua([[return vim.bo.filetype == 'TelescopePrompt']]) end), kind .. ' opened')
     vim.wait(100)
-    local button = lua([[
+    local button
+    assert(vim.wait(3000, function()
+      button = lua([[
       local prompt = vim.api.nvim_get_current_win()
       for _, win in ipairs(vim.api.nvim_list_wins()) do
         local c = vim.api.nvim_win_get_config(win)
@@ -106,8 +108,9 @@ local ok, err = pcall(function()
           local p=vim.fn.win_screenpos(win); return { p[1], p[2]+1 }
         end
       end
-    ]])
-    assert(button, kind .. ' clear button missing')
+      ]])
+      return type(button) == 'table' and button ~= vim.NIL
+    end), kind .. ' clear button missing')
     mouse(button[1], button[2])
     local cleared = vim.wait(1000, function() return lua([[
       local p = require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf())

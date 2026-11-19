@@ -60,6 +60,9 @@ if [ ! -f "$CONFIG_DIR/release.json" ]; then
   mkdir -p "$CONFIG_DIR"
   cp -R "$CONFIG_SOURCE/." "$CONFIG_DIR/"
 fi
+if [ ! -d "$CONFIG_DIR/ai/runtime/node_modules" ]; then
+  (cd "$CONFIG_DIR/ai/runtime" && npm ci --ignore-scripts --no-audit --no-fund)
+fi
 
 cat > "$HOME/.local/bin/movim" <<'LAUNCHER'
 #!/bin/bash

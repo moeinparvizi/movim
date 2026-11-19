@@ -14,7 +14,7 @@ const index = JSON.parse(load('docs/search.json'));
 const sources = fs.readdirSync(path.resolve(__dirname, '../docs')).filter(file => file.endsWith('.md'));
 assert.equal(index.length, sources.length, 'every source must be searchable');
 assert.equal(index[0].html, 'README.html', 'the complete index must come first');
-assert.equal(index.filter(page => /^\d\d-/.test(page.html)).length, 20, 'preserve all twenty chapters');
+assert.equal(index.filter(page => /^\d\d-/.test(page.html)).length, 21, 'preserve all twenty-one chapters');
 const documents = ['index.html', 'docs-en/README.html', ...index.map(page => `docs/${page.html}`)];
 const parsed = new Map(documents.map(file => [file, parseHTML(load(file)).document]));
 for (const [file, document] of parsed) {

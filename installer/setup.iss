@@ -52,15 +52,15 @@ Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
 [Files]
 Source: "{#Workspace}\neovim\lua\utils\update-engine.cjs"; DestDir: "{tmp}"; DestName: "movim-update-engine.cjs"; Flags: dontcopy
 Source: "{#Workspace}\neovim\release.json"; DestDir: "{tmp}"; DestName: "movim-incoming-release.json"; Flags: dontcopy
-#ifdef AiBuild
 Source: "{#Workspace}\neovim\ai\dist\ai-release.json"; DestDir: "{tmp}"; DestName: "movim-incoming-ai.json"; Flags: dontcopy
+#ifdef AiBuild
 Source: "{#Workspace}\neovim\ai\installer\movim-ai.cmd"; DestDir: "{app}"; Flags: ignoreversion
+#endif
 Source: "{#Workspace}\neovim\ai\lua\*"; DestDir: "{app}\neovim\ai\lua"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Workspace}\neovim\ai\README.md"; DestDir: "{app}\neovim\ai"; Flags: ignoreversion
 Source: "{#Workspace}\neovim\ai\runtime\package*.json"; DestDir: "{app}\neovim\ai\runtime"; Flags: ignoreversion
 Source: "{#Workspace}\neovim\ai\dist\pi-runtime.tar"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall
 Source: "{#Workspace}\neovim\ai\dist\ai-release.json"; DestDir: "{app}\neovim\ai"; Flags: ignoreversion
-#endif
 Source: "movim.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "nvim.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "start-webstorm.cmd"; DestDir: "{app}"; Flags: ignoreversion
@@ -116,10 +116,8 @@ begin
   ExtractTemporaryFile('movim-update-engine.cjs');
   ExtractTemporaryFile('movim-incoming-release.json');
   Params := '"' + ExpandConstant('{tmp}\movim-update-engine.cjs') + '" check "' + ExpandConstant('{app}\neovim') + '" "' + ExpandConstant('{tmp}\movim-incoming-release.json') + '"';
-#ifdef AiBuild
   ExtractTemporaryFile('movim-incoming-ai.json');
   Params := Params + ' "' + ExpandConstant('{tmp}\movim-incoming-ai.json') + '"';
-#endif
   if not Exec(NodePath, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
     Result := 'Could not check the existing installation. No settings were changed.'
   else if ResultCode <> 0 then begin
@@ -147,11 +145,9 @@ begin
     if not Exec(ExpandConstant('{sys}\tar.exe'), '-xf "' + ExpandConstant('{tmp}\installer-runtime.tar') + '" -C "' + ExpandConstant('{app}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       RaiseException('Could not start Windows tar to extract language tools.');
     if ResultCode <> 0 then RaiseException('Could not extract language tools; tar exit code: ' + IntToStr(ResultCode));
-#ifdef AiBuild
     if not Exec(ExpandConstant('{sys}\tar.exe'), '-xf "' + ExpandConstant('{tmp}\pi-runtime.tar') + '" -C "' + ExpandConstant('{app}\neovim\ai\runtime') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
       RaiseException('Could not extract the pinned Pi runtime.');
     if ResultCode <> 0 then RaiseException('Pi runtime extraction failed: ' + IntToStr(ResultCode));
-#endif
   end;
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('addpath') then begin
     AppPath := ExpandConstant('{app}');

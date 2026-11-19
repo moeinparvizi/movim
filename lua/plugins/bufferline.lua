@@ -12,6 +12,8 @@ return {
   opts = {
     options = {
       mode = "buffers",
+      show_tab_indicators = false,
+      custom_areas = { right = function() return { { text = require('utils.named_tabs').label() } } end },
       close_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,
       right_mouse_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,
       middle_mouse_command = function(bufnr) require('utils.buf').delete_safe(bufnr) end,

@@ -111,7 +111,7 @@ Files are backed up under **.movim-update/backups/** before being changed. Write
 
 When lazy-lock.json changes, plugins are installed/restored to the release's pinned versions after startup. Internet and Git are required; run `:MovimUpdate` to retry a failed synchronization. Reopen again if an already loaded plugin changed. The lightweight update does not replace native Neovim, language tools or launchers: upgrade those by running the new installer over the existing installation, without uninstalling. New Windows installers check existing configuration for edits and back it up before upgrading; macOS/Linux installers use the same preservation engine for installations with release.json. Interactive macOS/Linux installer validation requires those platforms.
 
-Older installations without `:MovimUpdate` need the new installer **once**. Close all editor windows and choose the same installation path and regular/AI edition. Keep application data; do not uninstall. Future feature updates are then available inside movim.
+Existing regular installations made before AI was included need the unified installer once to add it. Close all editor windows and choose the existing movim installation path; keep application data and do not uninstall. Future feature updates are available inside movim.
 
 ## Troubleshooting
 
@@ -180,9 +180,13 @@ Install Node and Mason's `js-debug-adapter`. Use `Space db` to toggle a breakpoi
 For browser debugging, start the development server yourself, select **Launch Chrome**, and provide its URL. Chrome and project source maps are required. Browser launch and interactive stepping have not been verified in this environment.
 
 
-## Optional movim AI edition
+## AI panel
 
-The separate **movim AI** Windows and macOS installers add an AI Panel. Download `movim-AI-Setup.exe` or `movim-AI-macOS.zip` from the same GitHub release; source and installer instructions are in the repository's `ai/` directory. Windows installs to `Programs/movim-ai`; macOS uses `~/.config/movim-ai` and `~/.local/bin/movim-ai`, keeping the regular edition independent.
+The standard movim installers include the AI Panel. The source and pinned runtime remain in the repository's `ai/` directory. On macOS and Linux, installation prepares the runtime with npm.
+
+Use `Space qn` to create a named workspace, `Space qr` to rename it, and `Space qt` to switch workspaces. The project checkpoint saves their names and split layouts. `Space wv` and `Space ws` split the editor into equally sized panes with their own file labels. Alt-clicking a definition reuses its existing editor pane or opens it in the current pane.
+
+The screen refreshes after a selection or panel closes, so its contents do not remain painted over the editor.
 
 Use `:AIConfigure` with your provider's endpoint, exact model ID, verified context size and an API-key environment-variable name. If the key is missing, a hidden prompt asks for it. `:AIKey` lets you enter or replace it without restarting, while no requests are running. It stays in the process environment for this session and is not saved to disk or command history. Re-enter it after restarting, or export the configured variable before launching. No credentials or model subscription are bundled. GapCode/Luna availability requires a compatible provider endpoint and your own access; the independent Luna code review is not a live-provider integration test.
 

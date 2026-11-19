@@ -27,6 +27,7 @@ if phase == 'write' then
   vim.cmd('vsplit ' .. vim.fn.fnameescape(A .. '/two.txt'))
   vim.api.nvim_win_set_width(0, 55)
   vim.cmd('tab split'); vim.cmd('enew')
+  vim.t.movim_name = 'Backend'
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'unnamed draft فارسی' })
   vim.cmd('badd ' .. vim.fn.fnameescape(A .. '/cold.txt'))
   local files = W.search('files'); files.query, files.cwd, files.exclude = 'one', A .. '/src', { 'node_modules/**', '*.lock' }
@@ -56,6 +57,7 @@ elseif phase == 'read' then
   end
   check(draft and text(draft):find('debounced', 1, true), 'fresh process restores unnamed draft')
   check(#vim.api.nvim_list_tabpages() == 2, 'editor tabpages restored')
+  check(vim.t[vim.api.nvim_list_tabpages()[2]].movim_name == 'Backend', 'named workspace survives a fresh process')
   local first = vim.api.nvim_list_tabpages()[1]
   check(#vim.api.nvim_tabpage_list_wins(first) == 2, 'split layout restored')
   local two = named(A .. '/two.txt'); local sized, cursor = false, false

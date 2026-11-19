@@ -15,6 +15,8 @@ if ($node) { $nodePath = $node.Source } else {
 if (-not $nodePath) { throw 'Node.js is required to generate the release manifest.' }
 & $nodePath (Join-Path $PSScriptRoot 'manifest.cjs')
 if ($LASTEXITCODE -ne 0) { throw 'Could not generate the release manifest.' }
+& $nodePath (Join-Path $workspace 'neovim/ai/manifest.cjs')
+if ($LASTEXITCODE -ne 0) { throw 'Could not generate the AI manifest.' }
 
 function Add-PackageFile($archive, [string]$source, [string]$name, [bool]$executable = $false) {
   $entry = $archive.CreateEntry($name.Replace('\', '/'), [IO.Compression.CompressionLevel]::Optimal)
@@ -54,6 +56,15 @@ if (-not $WindowsOnly) {
           }
         }
       }
+      $ai = Join-Path $config 'ai'
+      foreach ($file in @('README.md', 'runtime/package.json', 'runtime/package-lock.json')) {
+        Add-PackageFile $zip (Join-Path $ai $file) "movim-macOS/config/ai/$file"
+      }
+      Add-PackageFile $zip (Join-Path $ai 'dist/ai-release.json') 'movim-macOS/config/ai/ai-release.json'
+      Get-ChildItem -LiteralPath (Join-Path $ai 'lua') -Recurse -File | ForEach-Object {
+        $relative = $_.FullName.Substring($ai.Length + 1).Replace('\', '/')
+        Add-PackageFile $zip $_.FullName "movim-macOS/config/ai/$relative"
+      }
     } finally { $zip.Dispose() }
   } finally { $stream.Dispose() }
   # .NET on Windows marks ZIP entries as DOS; mark them Unix so macOS preserves chmod.
@@ -78,6 +89,9 @@ if (-not $WindowsOnly) {
 }
 
 if (-not $MacOnly) {
+  if (-not (Test-Path (Join-Path $workspace 'neovim/ai/runtime/node_modules/@mariozechner/pi-coding-agent/package.json'))) { throw 'Install AI runtime dependencies with npm ci in neovim/ai/runtime before building.' }
+  & tar.exe -cf (Join-Path $workspace 'neovim/ai/dist/pi-runtime.tar') -C (Join-Path $workspace 'neovim/ai/runtime') node_modules
+  if ($LASTEXITCODE -ne 0) { throw 'Could not package AI runtime.' }
   $compiler = Join-Path $workspace '.tools/innosetup/ISCC.exe'
   if (-not (Test-Path -LiteralPath $compiler)) { throw "Inno Setup compiler missing: $compiler" }
   $mapping = & subst.exe

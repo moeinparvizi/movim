@@ -61,6 +61,14 @@ try {
     process.stdout.write((mouse.stdout || '') + (mouse.stderr || ''));
     if (mouse.error) throw mouse.error;
     if (mouse.status !== 0) throw Error('Rendered mouse integration failed');
+    const panelDir = path.join(scratch, 'panels');
+    fs.mkdirSync(panelDir, { recursive: true });
+    const panel = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/panel-close.lua'], {
+      cwd: root, env: { ...env, MOVIM_PANEL_TEST_DIR: panelDir, XDG_STATE_HOME: path.join(scratch, 'panel-state') }, encoding: 'utf8', timeout: 60000,
+    });
+    process.stdout.write((panel.stdout || '') + (panel.stderr || ''));
+    if (panel.error) throw panel.error;
+    if (panel.status !== 0) throw Error('Panel close integration failed');
   }
   console.log('PASS workspace recovery across eleven fresh Neovim processes');
 } finally {

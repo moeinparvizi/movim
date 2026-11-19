@@ -45,8 +45,8 @@ map("<C-Up>", "<cmd>resize +2<CR>", "Increase window height")
 map("<C-Down>", "<cmd>resize -2<CR>", "Decrease window height")
 map("<C-Left>", "<cmd>vertical resize -2<CR>", "Decrease window width")
 map("<C-Right>", "<cmd>vertical resize +2<CR>", "Increase window width")
-map("<leader>wv", "<C-w>v", "Split window vertically")
-map("<leader>ws", "<C-w>s", "Split window horizontally")
+map("<leader>wv", function() require('utils.editor_groups').split(true) end, "Split window vertically")
+map("<leader>ws", function() require('utils.editor_groups').split(false) end, "Split window horizontally")
 map("<leader>wq", "<C-w>c", "Close window")
 map("<leader>wo", "<C-w>o", "Close other windows")
 map("<leader>wh", "<C-w>H", "Move window to far left")
@@ -95,9 +95,12 @@ vim.keymap.set("n", "<M-LeftMouse>", function()
           end
           vim.api.nvim_set_current_win(source_win)
           vim.cmd("normal! m'")
-          vim.cmd("tab split")
           vim.bo[bufnr].buflisted = true
-          vim.api.nvim_win_set_buf(0, bufnr)
+          local existing
+          for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+            if vim.api.nvim_win_get_tabpage(win) == vim.api.nvim_get_current_tabpage() then existing = win; break end
+          end
+          if existing then vim.api.nvim_set_current_win(existing) else vim.api.nvim_win_set_buf(source_win, bufnr) end
           vim.api.nvim_win_set_cursor(0, { item.lnum, math.max((item.col or 1) - 1, 0) })
           vim.cmd("normal! zv")
         end
@@ -115,7 +118,7 @@ vim.keymap.set("n", "<M-LeftMouse>", function()
       end,
     })
   end
-end, { desc = "Alt+Click: open definition in a new tab" })
+end, { desc = "Alt+Click: open definition" })
 
 vim.keymap.set("n", "<M-LeftRelease>", "<LeftRelease>", { desc = "Alt release" })
 

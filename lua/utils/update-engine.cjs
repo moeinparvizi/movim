@@ -217,9 +217,8 @@ async function prepare(root, release, fetch = download) {
     const current = manifest(read(path.join(root, 'release.json'))).version;
     if (!release) release = JSON.parse(await fetch(api, 2 * 1024 * 1024));
     if (release.draft || release.prerelease || !newer(current, release.tag_name)) return { status: 'current', version: current };
-    const ai = exists(path.join(root, 'ai/ai-release.json'));
-    const name = ai ? 'movim-AI-macOS.zip' : 'movim-macOS.zip';
     const asset = n => release.assets?.find(a => a.name === n)?.browser_download_url;
+    const name = asset('movim-macOS.zip') ? 'movim-macOS.zip' : 'movim-AI-macOS.zip';
     if (!asset(name) || !asset('SHA256SUMS')) throw Error('Release assets are incomplete');
     const sums = (await fetch(asset('SHA256SUMS'), 65536)).toString('utf8');
     const expected = sums.split(/\r?\n/).map(line => line.trim().split(/\s+\*?/)).find(parts => parts[1] === name)?.[0];
@@ -227,7 +226,10 @@ async function prepare(root, release, fetch = download) {
     const archive = await fetch(asset(name));
     if (digest(archive) !== expected) throw Error('Download checksum mismatch');
     const version = release.tag_name.replace(/^v/, '');
-    const files = packageFiles(unzip(archive), version, ai);
+    const contents = unzip(archive);
+    if (exists(path.join(root, 'ai/ai-release.json')) && !contents.has('movim-macOS/config/ai/ai-release.json'))
+      throw Error('Release is missing the installed AI component.');
+    const files = packageFiles(contents, version, contents.has('movim-macOS/config/ai/ai-release.json'));
     return stageFiles(root, dir, files, version);
   });
 }
@@ -241,7 +243,7 @@ async function fromPackage(root, source) {
     const ai = manifest(read(aiFile), true);
     for (const name of [...Object.keys(ai.files), 'ai-release.json']) files.set('movim-macOS/config/ai/' + name, fs.readFileSync(target(source, 'ai/' + name)));
   }
-  if (exists(path.join(root, 'ai/ai-release.json')) !== exists(aiFile)) throw Error('Choose the installer matching your movim edition.');
+  if (exists(path.join(root, 'ai/ai-release.json')) && !exists(aiFile)) throw Error('The package is missing the AI component.');
   await lock(dir, () => stageFiles(root, dir, packageFiles(files, base.version, exists(aiFile)), base.version));
   return apply(root);
 }
@@ -309,6 +311,7 @@ async function apply(root, hooks = {}) {
       if (info.runtime) {
         const dest = target(root, 'ai/runtime/node_modules');
         if (exists(dest)) fs.renameSync(dest, target(path.join(dir, backup), 'node_modules'));
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
         fs.renameSync(target(stage, 'ai/runtime/node_modules'), dest);
       }
       for (const entry of journal.entries) {

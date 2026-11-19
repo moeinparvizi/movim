@@ -23,12 +23,15 @@ vim.cmd.colorscheme("movim")
 require("config.lazy")
 require("config.keymaps")
 require("config.autocmds")
+require("utils.ui_close").setup()
 require("utils.workspace").setup()
+require("utils.editor_groups").setup()
+require("utils.named_tabs").setup()
 require("utils.bookmarks").setup()
 require("utils.persian_display").setup()
 require("utils.updates").setup()
 
--- Only the separate AI edition ships this directory.
+-- The standard distribution includes the AI panel.
 local ai_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h") .. "/ai"
 if vim.fn.filereadable(ai_root .. "/lua/movim_ai/init.lua") == 1 then
   vim.opt.runtimepath:prepend(ai_root)

@@ -283,7 +283,7 @@ function M.save(force)
     for _, tab in ipairs(api.nvim_list_tabpages()) do
       local tree = layout(vim.fn.winlayout(api.nvim_tabpage_get_number(tab)), keys)
       if tree then
-        tabs[#tabs + 1] = { layout = tree, active = keys[api.nvim_win_get_buf(api.nvim_tabpage_get_win(tab))] }
+        tabs[#tabs + 1] = { layout = tree, active = keys[api.nvim_win_get_buf(api.nvim_tabpage_get_win(tab))], name = vim.t[tab].movim_name }
         if tab == api.nvim_get_current_tabpage() then selected = #tabs end
       end
     end
@@ -383,6 +383,7 @@ function M.open(path, options)
     for i, tab in ipairs(state.tabs) do
       if i > 1 then vim.cmd('tab split') end
       tabs[i] = api.nvim_get_current_tabpage()
+      vim.t[tabs[i]].movim_name = tab.name
       restore_layout(tab.layout, api.nvim_get_current_win(), buffers, leaves)
       for _, leaf in ipairs(leaves) do
         if api.nvim_win_get_tabpage(leaf.win) == tabs[i] and leaf.node.buffer == tab.active then api.nvim_set_current_win(leaf.win); break end
