@@ -57,7 +57,7 @@ Press `Space` to open the shortcut menu. Use the file explorer to browse a proje
 
 Find files or search text in a selected folder and exclude paths from results. Flash speeds up navigation. The file explorer supports creating, renaming and deleting files. Bookmarks help return to places in a project. Additional shortcuts are listed below; press `Space` and pause to explore the available commands.
 
-Click **×** at the right of a search input or press **Ctrl+U** to clear the entire query and keep typing. This works in file search, project grep, in-file fuzzy search and Find/Replace. Clearing persistent search inputs saves the empty query. Ctrl+U replaces Telescope's preview-scroll-up shortcut; Ctrl+D selects the search folder in Find Files/Grep.
+Click **×** at the right of a search input or press **Ctrl+U** to clear the entire query and keep typing. This works in file search, project grep, in-file fuzzy search and Find/Replace. Repeated clicks on the clear button are supported, and clearing persistent search inputs saves the empty query. Ctrl+U replaces Telescope's preview-scroll-up shortcut; Ctrl+D selects the search folder in Find Files/Grep.
 
 In Neo-tree, press **I** on a file/folder to hide entries with that name in the current workspace. Press **E** to edit comma-separated names and globs such as `dist, *.log, coverage`; use names, not paths. Empty the list to reset custom exclusions; the default node_modules filter remains. Filters persist independently per workspace across restarts. **H** temporarily toggles filtered items. This never deletes files, and search exclusions (Ctrl+X) are configured separately.
 
