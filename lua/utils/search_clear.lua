@@ -6,8 +6,12 @@ function M.telescope(buf, map)
   if not picker or not picker.prompt_win or not vim.api.nvim_win_is_valid(picker.prompt_win) then return true end
   vim.b[buf].movim_clear_attached = true
   M.attach(buf, picker.prompt_win, function() picker:set_prompt('') end, map,
-    function() require('telescope.actions').mouse_click(buf) end,
-    function() require('telescope.actions').double_mouse_click(buf) end)
+    function()
+      if not require('utils.search_preview').mouse(buf) then require('telescope.actions').mouse_click(buf) end
+    end,
+    function()
+      if not require('utils.search_preview').mouse(buf) then require('telescope.actions').double_mouse_click(buf) end
+    end)
   return true
 end
 function M.attach(buf, win, clear, map, mouse_fallback, double_mouse_fallback)

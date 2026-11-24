@@ -1,7 +1,17 @@
 local M = {}
 local api = vim.api
 local active
-function M.edit(prompt)
+function M.mouse(prompt)
+  if not vim.b[prompt].movim_search_prompt then return false end
+  local picker = require('telescope.actions.state').get_current_picker(prompt)
+  local position = vim.fn.getmousepos()
+  if not picker or position.winid ~= picker.preview_win then return false end
+  vim.schedule(function()
+    if api.nvim_buf_is_valid(prompt) then M.edit(prompt, position) end
+  end)
+  return true
+end
+function M.edit(prompt, position)
   if active then return end
   local picker = require('telescope.actions.state').get_current_picker(prompt)
   local entry = picker:get_selection()
@@ -28,7 +38,7 @@ function M.edit(prompt)
   end
   config.relative, config.style, config.border, config.zindex = 'editor', 'minimal', 'rounded', 70
   config.title = ' Edit: ' .. vim.fs.basename(path) .. ' '
-  config.footer = ' Ctrl+S save · Ctrl+E search '
+  config.footer = ' i edit · Ctrl+S save · Ctrl+E search '
   local handlers = api.nvim_get_autocmds({ group = 'PickerInsert', event = 'BufLeave', buffer = prompt })
   for _, handler in ipairs(handlers) do api.nvim_del_autocmd(handler.id) end
   vim.cmd('stopinsert')
@@ -42,9 +52,10 @@ function M.edit(prompt)
   end
   if not opened then rearm(); return vim.notify(tostring(win), vim.log.levels.ERROR) end
   vim.wo[win].number, vim.wo[win].cursorline = true, true
-  local line = math.min(entry.lnum or 1, api.nvim_buf_line_count(buf))
+  local line = math.max(1, math.min(position and position.line or entry.lnum or 1, api.nvim_buf_line_count(buf)))
   local text = api.nvim_buf_get_lines(buf, line - 1, line, false)[1] or ''
-  api.nvim_win_set_cursor(win, { line, math.min(math.max(0, (entry.col or 1) - 1), #text) })
+  local column = position and position.column or entry.col or 1
+  api.nvim_win_set_cursor(win, { line, math.min(math.max(0, column - 1), #text) })
   local group = api.nvim_create_augroup('MovimSearchPreview', { clear = true })
   local mappings = {}
   local closed = false

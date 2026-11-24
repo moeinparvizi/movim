@@ -130,6 +130,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'AI RPC failed.' }
           node tests/workspace.cjs ../.tools/nvim-win64/bin/nvim.exe --ui
           if ($LASTEXITCODE -ne 0) { throw 'Workspace recovery failed.' }
+          node tests/editor-tools.cjs ../.tools/nvim-win64/bin/nvim.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Editor tools and preview editing failed.' }
           node tests/updates.cjs ../.tools/nvim-win64/bin/nvim.exe
           if ($LASTEXITCODE -ne 0) { throw 'Update recovery failed.' }
           Pop-Location

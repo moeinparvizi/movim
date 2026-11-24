@@ -77,6 +77,18 @@ for _, kind in ipairs({ 'files', 'grep' }) do
   open({ search_dirs = dirs, default_text = kind == 'files' and '' or 'scope needle' }); p = picker()
   assert(vim.wait(3000, function() return p.manager and p.manager:num_results() == 2 end), 'both search folders produce results: ' .. kind)
   check(p.manager:num_results() == 2, kind .. ' searches two folders including paths with spaces')
+  local folder_win
+  for _, win in ipairs(api.nvim_list_wins()) do
+    if vim.bo[api.nvim_win_get_buf(win)].filetype == 'movim_search_folders' then folder_win = win; break end
+  end
+  check(folder_win ~= nil, kind .. ' displays its search folder list')
+  local folder_buf = api.nvim_win_get_buf(folder_win)
+  local folder_text = table.concat(api.nvim_buf_get_lines(folder_buf, 0, -1, false), '\n')
+  for _, path in ipairs(dirs) do
+    check(folder_text:find(vim.fn.fnamemodify(path, ':~'):gsub('\\', '/'), 1, true) ~= nil, kind .. ' displays folder ' .. path)
+  end
+  local folder_position = api.nvim_win_get_position(folder_win)
+  check(folder_position[1] + api.nvim_win_get_height(folder_win) < api.nvim_win_get_position(p.prompt_win)[1], 'folder list appears above the search prompt')
   assert(vim.wait(3000, function() return p:get_selection() ~= nil end), 'Result selection did not settle')
   local entry = p:get_selection()
   assert(entry, 'Selected search result missing')
@@ -97,10 +109,32 @@ for _, kind in ipairs({ 'files', 'grep' }) do
   api.nvim_set_current_win(p.prompt_win); vim.wait(30)
   check(api.nvim_get_current_buf() == p.prompt_bufnr, 'leaving editable preview restores picker focus')
   close()
+  check(not api.nvim_win_is_valid(folder_win) and not api.nvim_buf_is_valid(folder_buf), 'closing search removes its folder list')
   check(api.nvim_buf_is_valid(editbuf) and vim.bo[editbuf].modified, 'closing search preserves unsaved edits')
   api.nvim_buf_call(editbuf, function() vim.cmd('write') end)
 end
 -- Parent/child overlap must not duplicate the same file in either picker.
+local many_dirs = {}
+for index = 1, 12 do
+  many_dirs[index] = root .. '/A/folder-' .. index
+  vim.fn.mkdir(many_dirs[index], 'p')
+end
+vim.o.columns, vim.o.lines = 80, 24
+builtin.find_files({ search_dirs = many_dirs, previewer = false, layout_strategy = 'vertical', default_text = '' }); p = picker()
+local scope_window
+for _, win in ipairs(api.nvim_list_wins()) do
+  if vim.bo[api.nvim_win_get_buf(win)].filetype == 'movim_search_folders' then scope_window = win; break end
+end
+assert(scope_window)
+check(table.concat(api.nvim_buf_get_lines(api.nvim_win_get_buf(scope_window), 0, -1, false), '\n'):find('more folders', 1, true) ~= nil,
+  'many search folders show an overflow count in a small window')
+vim.o.columns, vim.o.lines = 120, 36
+p:full_layout_update()
+local scope_config = api.nvim_win_get_config(scope_window)
+check(scope_config.col + scope_config.width + 2 <= vim.o.columns and scope_config.row + scope_config.height + 2 <= vim.o.lines,
+  'folder list stays inside the editor after resize')
+close()
+vim.o.columns, vim.o.lines = 180, 48
 for index, open in ipairs({ builtin.find_files, builtin.live_grep }) do
   open({ search_dirs = { root .. '/A/src', root .. '/A/src', root .. '/A' }, default_text = index == 1 and 'scoped' or 'scope needle' })
   p = picker()

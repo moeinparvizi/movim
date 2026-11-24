@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.28
+
+- Show the active search folders above Find Files and Grep, with an overflow count and access to the complete list through Ctrl+D.
+- Click search preview text to edit the actual file at the clicked line, save with Ctrl+S and return to the search with Ctrl+E.
+- Validate preview editing through real keyboard and mouse input for both search modes, including saving changes to disk.
+
 ## 1.1.27
 
 - Search multiple folders in Find Files and Grep, keep each project's scope, and edit the actual file directly from the preview.

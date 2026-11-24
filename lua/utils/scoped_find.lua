@@ -100,6 +100,7 @@ function M.attach(prompt_bufnr, map, state, kind)
   local picker = action_state.get_current_picker(prompt_bufnr)
   require('utils.search_clear').telescope(prompt_bufnr, map)
   state = state or workspace().search(kind or 'files'); state.kind = kind or state.kind or 'files'
+  require('utils.search_folders').attach(picker, state.dirs and #state.dirs > 0 and state.dirs or { state.cwd })
   local function remember()
     if vim.api.nvim_buf_is_valid(prompt_bufnr) then
       local ok, query = pcall(picker._get_prompt, picker)
@@ -132,7 +133,11 @@ function M.attach(prompt_bufnr, map, state, kind)
   for _, mode in ipairs({ 'i', 'n' }) do
     map(mode, '<C-d>', function() edit_scope('folder') end)
     map(mode, '<C-x>', function() edit_scope('exclude') end)
-    map(mode, '<C-e>', function() require('utils.search_preview').edit(prompt_bufnr) end)
+    map(mode, '<C-e>', function()
+      vim.schedule(function()
+        if vim.api.nvim_buf_is_valid(prompt_bufnr) then require('utils.search_preview').edit(prompt_bufnr) end
+      end)
+    end)
   end
   return true
 end
