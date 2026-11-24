@@ -56,7 +56,10 @@ local function project_paths(state, root, storing)
   for _, item in ipairs(value.buffers or {}) do
     item.name, item.recovery_origin = convert(item.name), convert(item.recovery_origin)
   end
-  for _, search in pairs(value.searches or {}) do search.cwd = convert(search.cwd) end
+  for _, search in pairs(value.searches or {}) do
+    search.cwd = convert(search.cwd)
+    for index, path in ipairs(search.dirs or {}) do search.dirs[index] = convert(path) end
+  end
   value.root = root
   return value
 end
@@ -138,6 +141,10 @@ valid = function(state)
   for _, value in pairs(state.searches or {}) do
     if type(value) ~= 'table' or type(value.cwd) ~= 'string' or type(value.query) ~= 'string' or type(value.exclude) ~= 'table' then return false end
     for _, pattern in ipairs(value.exclude) do if type(pattern) ~= 'string' then return false end end
+    if value.dirs ~= nil then
+      if type(value.dirs) ~= 'table' or not vim.islist(value.dirs) then return false end
+      for _, path in ipairs(value.dirs) do if type(path) ~= 'string' or path == '' then return false end end
+    end
   end
   local keys = {}
   for _, item in ipairs(state.buffers) do

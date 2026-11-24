@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.27
+
+- Search multiple folders in Find Files and Grep, keep each project's scope, and edit the actual file directly from the preview.
+- Add searchable project clipboard history with multiline previews and paste at the original cursor.
+- Add language-aware live templates with Tab expansion, editable fields and selection surrounds; save custom templates in `.movim/live-templates.json`.
+- Restore Structure loading with a compatible Aerial version and Tree-sitter-first outlines. Make file, line and selection formatting available before an LSP attaches.
+- Preserve the editing cursor during mouse scrolling and improve project, Git and task selection popups.
+- Cover project recovery, search previews, clipboard actions, templates, formatting and outline loading with editor integration tests.
+
 ## Project-local workspace recovery
 
 - Store editor checkpoints in each project's `.movim/settings.json`, using relative internal paths. Migrate central checkpoints without deleting recovery copies; restore only the launch folder automatically.

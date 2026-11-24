@@ -37,6 +37,14 @@ The installer uses a separate XDG configuration and backs up a previous movim co
 
 ## First steps
 
+Template surrounds support character and multiline selections. Blockwise selections (Ctrl+V) are refused without editing the text. A broken template file in another project cannot reuse the previous project's templates.
+
+Live templates expand an abbreviation such as `log` with **Tab** in Insert mode. Tab/Shift+Tab navigate fields. Use `Space ct` (Normal/Visual) or `Ctrl+J` (Insert) to pick a template; Visual mode surrounds the selection. `Space cT` / `:LiveTemplatesEdit` opens the active project's `.movim/live-templates.json`. Templates reload on save; `:LiveTemplatesReload` reloads external changes. Each entry defines `abbreviation`, `description`, `filetypes`, `body` and optional `variables`. `$NAME$` fields use defaults from `variables`, repeated names mirror the same field, `$END$` sets the final cursor and `$SELECTION$` inserts selected text. Standard `${1:value}` snippet syntax also works; use one field style per template. Project entries override built-ins for the same abbreviation/filetype; `disabled: true` disables an entry and top-level `enabled: false` disables movim templates for this project. Invalid files preserve the last valid templates. JSON is read as data; executable WebStorm macros are not supported. Built-ins cover JS/TS loops, functions, imports and logging, React components, TypeScript interfaces, HTML containers, Lua and Python functions.
+
+**Clipboard history:** `Ctrl+Shift+V` (Normal/Insert), `Space hy` or `:ClipboardHistory` opens a searchable list with a full text preview. Enter pastes at the original cursor; Ctrl+D removes an entry, Ctrl+X clears history, and Esc cancels. `:ClipboardHistoryClear` also clears it. Copies inside the editor and the current system clipboard on focus/open are captured, with Unicode, multiline and register type preserved. Earlier OS history and intermediate copies in other apps are not accessible. Each project's history and configurable `limit` (default 50, maximum 200) are stored in `.movim/settings.json` under `preferences.clipboard`; keep `.movim/` gitignored.
+
+**Formatting:** `Space cf` / `Ctrl+Alt+L` formats the file, or selected lines in Visual mode. `Space cF` / `:FormatLine` formats the current line; `:Format` accepts an Ex range. These commands work before an LSP attaches, use installed formatters with LSP fallback, and explain missing tools through `:ConformInfo`. A formatter may expand a range to its enclosing syntax. Structure (`Space o`) uses a Neovim-compatible Aerial version and local Tree-sitter first, with LSP fallback; `:AerialInfo` reports available backends.
+
 Press `Space` to open the shortcut menu. Use the file explorer to browse a project. `<leader>` means Space; key availability may depend on your terminal and installed plugins.
 
 | Shortcut | Action |
@@ -65,7 +73,7 @@ In Neo-tree, press **I** on a file/folder to hide entries with that name in the 
 
 Selecting a word or single-line text softly highlights its exact occurrences in the same window until the selection ends. Ctrl+Click adds or removes a cursor in Normal and Insert modes; configure the terminal to pass Ctrl+Click through if it intercepts links.
 
-Mouse scrolling keeps the cursor in place while its line remains visible. Neovim moves it into view if that line scrolls off screen.
+Vertical and horizontal mouse scrolling preserve the editing cursor and selection even when the cursor goes offscreen. Typing or keyboard navigation returns to that editing position; clicking visible text selects a new position. Ctrl+Click also adds a cursor in scrolled text. Scrolling another split keeps keyboard focus in the original split.
 
 Completion, diagnostics, hover, definition and rename use language servers. Install the relevant language server and project dependencies for your language. Rename depends on server support; cross-file and template changes vary by server and project. Treesitter, formatting, linting, multiple cursors and snippets are also available.
 
@@ -80,6 +88,8 @@ Use the task panel to run available project tasks and scripts. The terminal pane
 The task panel opens at the bottom; once a task runs, its list is on the right and terminal output is on the left. Each task has its own terminal without adding an empty `[No Name]` file. Reopening a running task reuses its terminal.
 
 ## Git
+
+Repository, pull mode, remote and branch choices open in a centered searchable popup. Type to filter, use arrow keys to navigate, and press Enter or double-click to choose; Esc cancels. Repository names include their paths. The Tasks panel uses distinct status colors, starts on the first task, and offers `/` to search and run a task in the same popup.
 
 In workspaces containing multiple repositories, `Space gg` (lazygit), `Space gd` (Diffview), `Space ge` (Git tree) and `Space gu/gL/gb` (Git pickers) ask which project to open. `Space gc` remains the commit action. A single repository opens directly; cancel leaves the editor unchanged. Selection does not change the workspace working directory. Discovery includes the parent repository, the current file's repository and child repositories up to three levels deep, scanning at most 3,000 folders in batches. Dependencies/output folders such as node_modules, vendor, dist and build are skipped. Open a deeper project's folder as a workspace to work with it.
 
@@ -161,7 +171,9 @@ Source files are written only with normal save commands such as `:w`; drafts rem
 
 Hidden clean buffers remain unloaded during restoration, deferring their disk reads, FileType hooks and language servers until they are displayed. Visible files and recovered drafts load immediately.
 
-Find Files and Grep separately remember the last query, folder (Ctrl+D) and exclusion globs (Ctrl+X), including across application restarts. Clearing a value persists the empty value. Buffer Find and Replace retain their text too. Visual `Space fg` searches exactly the selected text, including Unicode; single-line selections use literal matching and multiline selections use escaped newline patterns. Normal `Space fg` reopens the last project query.
+Find Files and Grep separately remember the last query, search folders (Ctrl+D) and exclusion globs (Ctrl+X), including across application restarts. In the folder popup, choose **Add folder…** to add directories, **Remove** to remove an entry, then **Apply folders**. Multiple directories may include folders outside the project. Remove the project root to restrict searching to selected subfolders; cancelling preserves the previous scope. Clearing a value persists the empty value. Buffer Find and Replace retain their text too. Visual `Space fg` searches exactly the selected text, including Unicode; single-line selections use literal matching and multiline selections use escaped newline patterns. Normal `Space fg` reopens the last project query.
+
+Press **Ctrl+E** on a selected Find Files or Grep result to edit the real file in the preview area. Use normal editor commands (`i` to insert); **Ctrl+S** or `:w` saves, and **Ctrl+E** returns to the search. Closing the picker preserves unsaved edits in the file buffer. Small windows without a preview use a floating editor instead.
 
 The Visual-mode Space menu includes **Find / search**: `Space f/` searches the selection in the current file, `Space ff` seeds Find Files and `Space fg` seeds Grep. Multiline file-name selections become space-separated text. Fresh file/grep searches exclude `*.mrt, *.ttf, *.wff2, *.wff, *.woff2, *.woff, *.eot`; existing custom or deliberately empty excludes are preserved. Internal `.movim` files are excluded from searches and hidden in Explorer by default.
 

@@ -49,12 +49,74 @@ check(p:_get_prompt() == 'one' and #W.search('files').exclude == 2, 'Ctrl+X pres
 close(); builtin.find_files(); p = picker()
 check(#W.search('files').exclude == 2 and p:_get_prompt() == 'one', 'reopened picker retains exclusions')
 vim.ui.input = function(_, callback) callback(root .. '/A/src') end
+local select = vim.ui.select
+local choices = { 3, 1, 2 } -- Remove old scope, add a folder, apply.
+vim.ui.select = function(items, _, callback) local index = table.remove(choices, 1); callback(items[index], index) end
 for _, mapping in ipairs(api.nvim_buf_get_keymap(p.prompt_bufnr, 'i')) do
   if mapping.lhs:lower() == '<c-d>' then mapping.callback(); break end
 end
-vim.wait(100); vim.ui.input = input; p = picker()
+vim.wait(100); vim.ui.input, vim.ui.select = input, select; p = picker()
 check(vim.fs.normalize(p.cwd):gsub('/$', '') == root .. '/A/src', 'Ctrl+D saves the search folder')
+vim.ui.input = function(_, callback) callback(root .. '/B') end
+choices = { 1, 1, 2 } -- Add twice; duplicate folders should appear only once.
+vim.ui.select = function(items, _, callback) local index = table.remove(choices, 1); callback(items[index], index) end
+for _, mapping in ipairs(api.nvim_buf_get_keymap(p.prompt_bufnr, 'i')) do
+  if mapping.lhs:lower() == '<c-d>' then mapping.callback(); break end
+end
+assert(vim.wait(1500, function() return vim.bo.filetype == 'TelescopePrompt' end))
+vim.ui.input, vim.ui.select = input, select; p = picker()
+check(#W.search('files').dirs == 2, 'folder manager adds multiple folders and ignores duplicates')
 close()
+-- Both builtins must search every selected directory and omit outside files.
+vim.fn.writefile({ 'scope needle' }, root .. '/A/src/scoped.txt')
+vim.fn.mkdir(root .. '/B/with spaces', 'p')
+vim.fn.writefile({ 'scope needle' }, root .. '/B/with spaces/second.txt')
+local dirs = { root .. '/A/src', root .. '/B/with spaces' }
+for _, kind in ipairs({ 'files', 'grep' }) do
+  local open = kind == 'files' and builtin.find_files or builtin.live_grep
+  open({ search_dirs = dirs, default_text = kind == 'files' and '' or 'scope needle' }); p = picker()
+  assert(vim.wait(3000, function() return p.manager and p.manager:num_results() == 2 end), 'both search folders produce results: ' .. kind)
+  check(p.manager:num_results() == 2, kind .. ' searches two folders including paths with spaces')
+  assert(vim.wait(3000, function() return p:get_selection() ~= nil end), 'Result selection did not settle')
+  local entry = p:get_selection()
+  assert(entry, 'Selected search result missing')
+  require('utils.search_preview').edit(p.prompt_bufnr)
+  local editwin, editbuf = api.nvim_get_current_win(), api.nvim_get_current_buf()
+  check(vim.bo[editbuf].buftype == '' and api.nvim_buf_get_name(editbuf):find('%.txt$'), kind .. ' preview edits the real file buffer')
+  api.nvim_buf_set_lines(editbuf, 0, -1, false, { 'scope needle edited ' .. kind })
+  local save = vim.fn.maparg('<C-s>', 'n', false, true).callback
+  assert(save, 'Preview save shortcut missing'); save()
+  check(vim.fn.readfile(api.nvim_buf_get_name(editbuf))[1] == 'scope needle edited ' .. kind, kind .. ' preview saves changes to disk')
+  api.nvim_buf_set_lines(editbuf, 0, -1, false, { 'scope needle unsaved ' .. kind })
+  vim.fn.maparg('<C-e>', 'n', false, true).callback()
+  check(api.nvim_get_current_buf() == p.prompt_bufnr and not api.nvim_win_is_valid(editwin), 'Ctrl+E returns to search')
+  check(vim.bo[editbuf].modified, 'unsaved preview edits remain in the real buffer')
+  require('utils.search_preview').edit(p.prompt_bufnr)
+  check(api.nvim_get_current_buf() == editbuf and api.nvim_buf_get_lines(editbuf, 0, 1, false)[1] == 'scope needle unsaved ' .. kind,
+    'reopening editable preview preserves unsaved edits')
+  api.nvim_set_current_win(p.prompt_win); vim.wait(30)
+  check(api.nvim_get_current_buf() == p.prompt_bufnr, 'leaving editable preview restores picker focus')
+  close()
+  check(api.nvim_buf_is_valid(editbuf) and vim.bo[editbuf].modified, 'closing search preserves unsaved edits')
+  api.nvim_buf_call(editbuf, function() vim.cmd('write') end)
+end
+-- Parent/child overlap must not duplicate the same file in either picker.
+for index, open in ipairs({ builtin.find_files, builtin.live_grep }) do
+  open({ search_dirs = { root .. '/A/src', root .. '/A/src', root .. '/A' }, default_text = index == 1 and 'scoped' or 'scope needle' })
+  p = picker()
+  assert(vim.wait(3000, function() return p:get_selection() ~= nil end))
+  check(p.manager:num_results() == 1, 'overlapping search folders execute once')
+  close()
+end
+W.search('files').dirs, W.search('grep').dirs = nil, nil
+W.search('files').cwd, W.search('grep').cwd = root .. '/A', root .. '/A'
+builtin.find_files({ previewer = false, default_text = 'scoped' }); p = picker()
+assert(vim.wait(3000, function() return p:get_selection() ~= nil end))
+require('utils.search_preview').edit(p.prompt_bufnr)
+local fallback_win, fallback_buf = api.nvim_get_current_win(), api.nvim_get_current_buf()
+check(vim.bo[fallback_buf].buftype == '' and fallback_buf ~= p.prompt_bufnr, 'editable preview works with preview disabled')
+actions.close(p.prompt_bufnr); vim.wait(50); vim.cmd('stopinsert')
+check(not api.nvim_win_is_valid(fallback_win) and api.nvim_buf_is_valid(fallback_buf), 'closing picker while editing preserves file and closes floating editor')
 builtin.live_grep(); p = picker(); p:set_prompt('external'); vim.wait(30); close()
 builtin.live_grep(); p = picker(); check(p:_get_prompt() == 'external', 'real Grep restores its independent query')
 clear_picker(); api.nvim_feedkeys('i', 'nx', false)
@@ -127,10 +189,18 @@ local tasks = require('utils.tasks'); tasks.toggle()
 local task_buf, task_win = api.nvim_get_current_buf(), api.nvim_get_current_win()
 check(vim.fn.win_screenpos(task_win)[1] > 1, 'task list opens in a bottom panel')
 local lines = api.nvim_buf_get_lines(task_buf, 0, -1, false)
+check(api.nvim_get_current_line():find('Smoke', 1, true) ~= nil, 'task panel starts on the first runnable task')
 for row, line in ipairs(lines) do if line:find('Smoke', 1, true) then api.nvim_win_set_cursor(task_win, { row, 0 }); break end end
 local run_task
-for _, mapping in ipairs(api.nvim_buf_get_keymap(task_buf, 'n')) do if mapping.lhs == '<CR>' then run_task = mapping.callback end end
-assert(run_task); run_task(); vim.cmd('stopinsert')
+for _, mapping in ipairs(api.nvim_buf_get_keymap(task_buf, 'n')) do if mapping.lhs == '/' then run_task = mapping.callback end end
+assert(run_task); run_task()
+local task_prompt = api.nvim_get_current_buf()
+local task_picker = require('telescope.actions.state').get_current_picker(task_prompt)
+task_picker:reset_prompt('Smoke')
+assert(vim.wait(2000, function() local entry = require('telescope.actions.state').get_selected_entry(); return entry and entry.value and entry.value.label == 'Smoke' end))
+require('telescope.actions').select_default(task_prompt)
+assert(vim.wait(3000, function() return vim.bo.buftype == 'terminal' end))
+vim.cmd('stopinsert')
 local output_buf, output_win = api.nvim_get_current_buf(), api.nvim_get_current_win()
 local task_position, output_position = vim.fn.win_screenpos(task_win), vim.fn.win_screenpos(output_win)
 check(task_position[1] == output_position[1] and output_position[2] < task_position[2], 'task output is left of task list in the same bottom panel')

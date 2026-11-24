@@ -67,6 +67,14 @@ try {
     process.stdout.write((hover.stdout || '') + (hover.stderr || ''));
     if (hover.error) throw hover.error;
     if (hover.status !== 0) throw Error('Mouse hover integration failed');
+    for (const test of ['mouse-scroll', 'hover-multicursor']) {
+      const result = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', `tests/${test}.lua`], {
+        cwd: root, env, encoding: 'utf8', timeout: 15000,
+      });
+      process.stdout.write((result.stdout || '') + (result.stderr || ''));
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw Error(`${test} integration failed`);
+    }
     const panelDir = path.join(scratch, 'panels');
     fs.mkdirSync(panelDir, { recursive: true });
     const panel = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/panel-close.lua'], {

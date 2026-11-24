@@ -207,7 +207,8 @@ end
 local function refresh()
   if not valid_panel() then return end
   local tasks, errors = discover(panel.root)
-  local lines = { "TASKS", vim.fn.fnamemodify(panel.root, ":~"), "", "Enter: run  o: output  x: stop", "r: refresh  e: edit  c: command  q: close", "" }
+  local lines = { "  TASKS  /  " .. vim.fn.fnamemodify(panel.root, ":t"),
+    "  Enter run   / search   o output   x stop", "  c command   e edit   r refresh   q close", "" }
   panel.rows = {}
   for _, source in ipairs({ "VS Code", "package.json" }) do
     lines[#lines + 1] = source == "VS Code" and ".vscode/tasks.json" or "package.json scripts"
@@ -226,6 +227,16 @@ local function refresh()
   vim.bo[panel.buf].modifiable = true
   vim.api.nvim_buf_set_lines(panel.buf, 0, -1, false, lines)
   vim.bo[panel.buf].modifiable = false
+  local ns = vim.api.nvim_create_namespace('movim-task-style')
+  vim.api.nvim_buf_clear_namespace(panel.buf, ns, 0, -1)
+  for index, line in ipairs(lines) do
+    local task = panel.rows[index]
+    local item = task and panel.runs[task.key]
+    local group = index == 1 and 'Title' or index <= 3 and 'Comment'
+      or task and (item and (item.running and 'DiagnosticInfo' or item.code == 0 and 'DiagnosticOk' or 'DiagnosticError') or 'Normal')
+      or line:match('^Error:') and 'DiagnosticError' or 'Comment'
+    vim.api.nvim_buf_set_extmark(panel.buf, ns, index - 1, 0, { end_col = #line, hl_group = group })
+  end
 end
 
 vim.api.nvim_create_autocmd("BufWritePost", {
@@ -340,6 +351,7 @@ function M.toggle()
   vim.wo[panel.win].number, vim.wo[panel.win].relativenumber = false, false
   vim.wo[panel.win].signcolumn, vim.wo[panel.win].foldcolumn, vim.wo[panel.win].wrap = "no", "0", false
   vim.wo[panel.win].winfixheight = true
+  vim.wo[panel.win].cursorline = true
   vim.api.nvim_create_autocmd("BufEnter", { buffer = panel.buf, callback = function() vim.schedule(refresh) end })
   local function map(key, fn, desc) vim.keymap.set("n", key, fn, { buffer = panel.buf, silent = true, desc = desc }) end
   map("<CR>", function() local task = selected(); if task then run(task) end end, "Run selected task")
@@ -356,9 +368,16 @@ function M.toggle()
     if item and item.running and item.job then vim.fn.jobstop(item.job) else vim.notify("Selected task is not running", vim.log.levels.INFO, { title = "Tasks" }) end
   end, "Stop selected task")
   map("r", refresh, "Refresh tasks")
+  map("/", function()
+    local tasks = discover(panel.root)
+    if #tasks == 0 then return vim.notify('No tasks found. Press c to run a command or e to create tasks.json.') end
+    vim.ui.select(tasks, { prompt = 'Run task — ' .. vim.fn.fnamemodify(panel.root, ':t'),
+      format_item = function(task) return task.label .. '  ·  ' .. task.source .. status(task) end },
+      function(task) if task and valid_panel() then run(task) end end)
+  end, "Find and run task")
   map("e", edit_tasks, "Edit tasks.json")
   map("c", function()
-    vim.ui.input({ prompt = "Run command in " .. panel.root .. ": " }, function(value)
+    vim.ui.input({ prompt = "Run command · " .. vim.fn.fnamemodify(panel.root, ':t') .. ": " }, function(value)
       if value and vim.trim(value) ~= "" then
         vim.schedule(function() run({ key = panel.root .. "|command|" .. value, label = value, literal = value }) end)
       end
@@ -366,6 +385,9 @@ function M.toggle()
   end, "Run a command")
   map("q", M.toggle, "Close tasks")
   refresh()
+  for row = 1, vim.api.nvim_buf_line_count(panel.buf) do
+    if panel.rows[row] then vim.api.nvim_win_set_cursor(panel.win, { row, 0 }); break end
+  end
 end
 
 return M

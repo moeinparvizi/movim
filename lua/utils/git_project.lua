@@ -61,8 +61,8 @@ function M.choose(callback)
     end
     if #found == 0 then return vim.notify('No Git repositories found in this workspace (search depth: 3)', vim.log.levels.WARN) end
     if #found == 1 then return select(found[1]) end
-    vim.ui.select(found, { prompt = 'Open Git for which project?', format_item = function(path)
-      return vim.fn.fnamemodify(path, ':~')
+    vim.ui.select(found, { prompt = 'Git project', format_item = function(path)
+      return vim.fn.fnamemodify(path, ':t') .. '  —  ' .. vim.fn.fnamemodify(path, ':~')
     end }, select)
   end
   local function batch()

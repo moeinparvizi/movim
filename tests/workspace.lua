@@ -31,6 +31,7 @@ if phase == 'write' then
   vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'unnamed draft فارسی' })
   vim.cmd('badd ' .. vim.fn.fnameescape(A .. '/cold.txt'))
   local files = W.search('files'); files.query, files.cwd, files.exclude = 'one', A .. '/src', { 'node_modules/**', '*.lock' }
+  files.dirs = { A .. '/src', B }
   W.search('grep').query = 'hello.*world'
   W.preference('explorer_width', 32, 46); W.preference('terminal_height', 15, 12)
   W.preference('explorer_hidden', {}, { 'dist', '*.log' })
@@ -67,6 +68,7 @@ elseif phase == 'read' then
   end
   check(sized and cursor, 'split width and cursor restored')
   check(W.search('files').query == 'one' and #W.search('files').exclude == 2 and W.search('files').cwd == A .. '/src', 'find query, scope and exclusions survive restart')
+  check(vim.deep_equal(W.search('files').dirs, { A .. '/src', B }), 'multiple search folders survive restart')
   check(W.search('grep').query == 'hello.*world', 'grep has independent persistent state')
   check(W.preference('explorer_width', 32) == 46 and W.preference('terminal_height', 15) == 12, 'explorer and terminal sizes survive restart')
   check(vim.deep_equal(W.preference('explorer_hidden', {}), { 'dist', '*.log' }), 'hidden explorer names survive application restart')
@@ -95,6 +97,7 @@ elseif phase == 'portable' then
   assert(W.open(E, { startup = true }))
   check(named(A .. '/one.txt') == -1 and text(named(E .. '/one.txt')) == 'unsaved فارسی\nsecond', 'copied workspace restores drafts using paths inside its new folder')
   check(W.search('files').cwd == E .. '/src', 'copied workspace search scope follows project folder')
+  check(vim.deep_equal(W.search('files').dirs, { E .. '/src', B }), 'copied search folders relocate internal paths and keep external paths')
   local stored = vim.json.decode(table.concat(vim.fn.readfile(statefile(E)), '\n'))
   check(stored.buffers[1].name:sub(1, 1) ~= '/' and not stored.buffers[1].name:match('^%a:'), 'project files are stored as relative paths')
 elseif phase == 'migration' then

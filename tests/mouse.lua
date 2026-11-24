@@ -91,6 +91,20 @@ local ok, err = pcall(function()
   ]], repo)
   vim.wait(400)
   check(lua([[return vim.o.mousemoveevent and vim.fn.maparg('<MouseMove>', 'n') ~= '']]), 'distribution enables mouse hover events')
+  local scroll = lua([[
+    vim.cmd('enew')
+    local lines={};for i=1,200 do lines[i]='scroll integration line '..i end
+    vim.api.nvim_buf_set_lines(0,0,-1,false,lines)
+    vim.api.nvim_win_set_cursor(0,{6,4});vim.cmd('redraw')
+    return {buf=vim.api.nvim_get_current_buf(),win=vim.api.nvim_get_current_win(),pos=vim.fn.win_screenpos(0),cursor=vim.api.nvim_win_get_cursor(0)}
+  ]])
+  for _=1,15 do request('nvim_input_mouse','wheel','down','',0,scroll.pos[1]+5,scroll.pos[2]+12) end
+  vim.wait(150)
+  check(vim.deep_equal(scroll.cursor,lua([[return vim.api.nvim_win_get_cursor(...)]],scroll.win)), 'full configuration preserves offscreen cursor while scrolling')
+  request('nvim_input','iZ')
+  check(vim.wait(2000,function() return lua([[return vim.api.nvim_buf_get_lines(0,5,6,false)[1]:find('Z',1,true)~=nil]]) end),'full configuration resumes typing at original cursor')
+  request('nvim_input','<Esc>');vim.wait(100)
+  lua([[local buf=...;vim.cmd('edit alpha.txt');vim.api.nvim_buf_delete(buf,{force=true})]],scroll.buf)
   lua([[local f = require('utils.find_panel'); f.open(); vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'remember find' }); f.close(); f.open()]])
   check(vim.wait(1500, function() return lua([[return vim.api.nvim_get_mode().mode:sub(1, 1) == 'i']]) end), 'reopened Find enters Insert mode')
   request('nvim_input', '!')

@@ -12,7 +12,7 @@ function M.setup()
         end)
     end
   end
-  local select_ui, input_ui = vim.ui.select, vim.ui.input
+  local select_ui, input_ui = require('utils.select_popup').select, vim.ui.input
   vim.ui.select = function(items, options, callback)
     return select_ui(items, options, complete(callback))
   end
