@@ -6,7 +6,7 @@ return {
   "brenton-leighton/multiple-cursors.nvim",
   version = "*",
   keys = {
-    { "<C-LeftMouse>", "<cmd>MultipleCursorsMouseAddDelete<CR>", mode = "n", desc = "Toggle cursor at mouse (Ctrl+Click)" },
+    { "<C-LeftMouse>", "<cmd>MultipleCursorsMouseAddDelete<CR>", mode = { "n", "i" }, desc = "Toggle cursor at mouse (Ctrl+Click)" },
     { "<C-Down>", "<cmd>MultipleCursorsAddDown<CR>", mode = "n", desc = "Add cursor below" },
     { "<C-Up>", "<cmd>MultipleCursorsAddUp<CR>", mode = "n", desc = "Add cursor above" },
     { "<C-n>", "<cmd>MultipleCursorsAddJumpNextMatch<CR>", mode = { "n", "x" }, desc = "Select next match" },

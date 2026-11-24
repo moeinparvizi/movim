@@ -1,6 +1,7 @@
 -- One persistent search state per picker and project, including scope controls.
 local M = {}
 local originals = {}
+local paste_chunks
 local function workspace() return require('utils.workspace') end
 function M.open(kind, options)
   local state = options and options._movim_state or workspace().search(kind)
@@ -36,6 +37,7 @@ function M.open(kind, options)
   return originals[kind](options)
 end
 function M.attach(prompt_bufnr, map, state, kind)
+  vim.b[prompt_bufnr].movim_search_prompt = true
   local actions, action_state = require('telescope.actions'), require('telescope.actions.state')
   local picker = action_state.get_current_picker(prompt_bufnr)
   require('utils.search_clear').telescope(prompt_bufnr, map)
@@ -97,6 +99,26 @@ function M.install()
   local builtin = require('telescope.builtin')
   if originals.files then return end
   originals.files, originals.grep = builtin.find_files, builtin.live_grep
+  local paste = vim.paste
+  vim.paste = function(lines, phase)
+    if phase == 1 then paste_chunks = nil end
+    if paste_chunks or vim.b.movim_search_prompt then
+      if phase == -1 then return paste({ table.concat(lines, ' ') }, -1) end
+      if phase == 1 then paste_chunks = { buffer = vim.api.nvim_get_current_buf(), lines = {} } end
+      if paste_chunks and paste_chunks.buffer == vim.api.nvim_get_current_buf() then
+        local chunks = paste_chunks.lines
+        if #chunks > 0 and #lines > 0 then chunks[#chunks] = chunks[#chunks] .. table.remove(lines, 1) end
+        vim.list_extend(chunks, lines)
+        if phase == 3 then
+          paste_chunks = nil
+          return paste({ table.concat(chunks, ' ') }, -1)
+        end
+        return true
+      end
+      paste_chunks = nil
+    end
+    return paste(lines, phase)
+  end
   builtin.find_files = function(opts) return M.open('files', opts) end
   builtin.live_grep = function(opts) return M.open('grep', opts) end
 end

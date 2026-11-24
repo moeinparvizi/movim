@@ -143,23 +143,16 @@ local function preview_buffer(self, theme, original)
   vim.wo[self.state.winid].winhighlight = "Normal:NemovimThemeDemoBackground,NormalNC:NemovimThemeDemoBackground"
   local lines = {
     "  " .. theme.name,
-    theme.installed and "  Installed  ·  live editor preview" or "  Available  ·  palette illustration; Enter to install",
-    "",
-    "  // components/Profile.tsx",
+    theme.installed and "  Live preview" or "  Palette preview (not installed)",
+    "  // Profile.tsx",
     "  import { useState } from 'react';",
-    "",
-    "  type Props = { name: string };",
-    "",
-    "  export function Profile({ name }: Props) {",
-    "    const [count, setCount] = useState(0);",
-    "    return (",
-    "      <button onClick={() => setCount(count + 1)}>",
-    "        Hello, {name}! {count}",
-    "      </button>",
-    "    );",
+    "  export function Profile() {",
+    "    const [n, setN] = useState(0);",
+    "    return <button onClick={",
+    "      () => setN(n + 1)}>",
+    "      Hello! {n}</button>;",
     "  }",
-    "",
-    "  Enter: apply/install   Ctrl+G: GitHub   Esc: cancel",
+    "  Enter: apply   Esc: cancel",
   }
   vim.bo[self.state.bufnr].modifiable = true
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
@@ -170,14 +163,14 @@ local function preview_buffer(self, theme, original)
   end
   paint(1, 2, #lines[1], "Function")
   paint(2, 2, #lines[2], "Comment")
-  paint(4, 2, #lines[4], "Comment")
-  for _, row in ipairs({ 5, 7, 9, 10, 11 }) do
+  paint(3, 2, #lines[3], "Comment")
+  for _, row in ipairs({ 4, 5, 6, 7 }) do
     local text = lines[row]
     local first, last = text:find("%a+")
     if first then paint(row, first - 1, last, "Keyword") end
   end
-  paint(13, 8, #lines[13], "String")
-  paint(18, 2, #lines[18], "Comment")
+  paint(9, 6, #lines[9], "String")
+  paint(11, 2, #lines[11], "Comment")
   vim.bo[self.state.bufnr].modifiable = false
 end
 

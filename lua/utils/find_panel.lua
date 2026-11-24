@@ -204,7 +204,7 @@ function M.open(options)
     end,
   })
   vim.api.nvim_set_current_win(s.search_win)
-  vim.cmd.startinsert()
+  vim.cmd.startinsert({ bang = true })
 end
 
 return M

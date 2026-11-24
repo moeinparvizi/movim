@@ -90,6 +90,36 @@ local ok, err = pcall(function()
     vim.cmd('redraw')
   ]], repo)
   vim.wait(400)
+  check(lua([[return vim.o.mousemoveevent and vim.fn.maparg('<MouseMove>', 'n') ~= '']]), 'distribution enables mouse hover events')
+  lua([[local f = require('utils.find_panel'); f.open(); vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'remember find' }); f.close(); f.open()]])
+  check(vim.wait(1500, function() return lua([[return vim.api.nvim_get_mode().mode:sub(1, 1) == 'i']]) end), 'reopened Find enters Insert mode')
+  request('nvim_input', '!')
+  check(vim.wait(1000, function() return lua([[return vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] == 'remember find!']]) end), 'reopened Find appends typed text to the saved query')
+  lua([[require('utils.find_panel').close()]])
+  request('nvim_ui_try_resize', 80, 24)
+  vim.wait(300)
+  lua([[vim.o.cmdheight = 1]])
+  lua([[require('config.theme').picker()]])
+  check(vim.wait(2000, function() return lua([[
+    local p = require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf())
+    local s = p and p.previewer and p.previewer.state
+    return s and s.winid and s.bufnr and vim.api.nvim_buf_is_valid(s.bufnr)
+      and vim.api.nvim_buf_line_count(s.bufnr) == 11
+  ]]) end), 'theme gallery preview opens')
+  vim.wait(300)
+  local gallery = lua([[
+    local p = require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf())
+    local s = p.previewer.state
+    local lines = vim.api.nvim_buf_get_lines(s.bufnr, 0, -1, false)
+    local width = vim.api.nvim_win_get_width(s.winid)
+    local height = vim.api.nvim_win_get_height(s.winid)
+    local longest = 0
+    for _, line in ipairs(lines) do longest = math.max(longest, #line) end
+    return { height = height, width = width, count = #lines, longest = longest }
+  ]])
+  check(gallery.count <= gallery.height and gallery.longest <= gallery.width, 'complete theme sample fits an 80x24 terminal: ' .. vim.inspect(gallery))
+  lua([[local p = require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()); require('telescope.actions').close(p.prompt_bufnr)]])
+  request('nvim_ui_try_resize', 120, 35)
   for _, kind in ipairs({ 'find_files', 'live_grep' }) do
     lua([[
       local kind = ...

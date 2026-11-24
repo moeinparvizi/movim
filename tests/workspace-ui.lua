@@ -28,8 +28,15 @@ local function clear_picker()
   check(p:_get_prompt() == '', 'Ctrl+U clears the whole picker query')
 end
 builtin.find_files(); local p = picker(); p:set_prompt('one'); vim.wait(30); close()
+builtin.find_files(); p = picker(); p:set_prompt(''); api.nvim_feedkeys('i', 'nx', false)
+api.nvim_paste('first line\nsecond line\nthird line', true, -1); vim.wait(100)
+check(p:_get_prompt() == 'first line second line third line', 'Find Files preserves all pasted lines')
+clear_picker(); api.nvim_paste('long ', true, 1); api.nvim_paste('text\nnext', true, 2); api.nvim_paste(' line', true, 3); vim.wait(100)
+check(p:_get_prompt() == 'long text next line', 'Find Files preserves streamed paste chunks')
+close()
 builtin.find_files(); p = picker()
-check(p:_get_prompt() == 'one', 'real Find Files reopens with previous query')
+check(p:_get_prompt() == 'long text next line', 'real Find Files reopens with previous query')
+p:set_prompt('one'); vim.wait(30)
 local input = vim.ui.input
 vim.ui.input = function(_, callback) callback('*.lock, ignored/**') end
 local scope_key
@@ -50,6 +57,9 @@ check(vim.fs.normalize(p.cwd):gsub('/$', '') == root .. '/A/src', 'Ctrl+D saves 
 close()
 builtin.live_grep(); p = picker(); p:set_prompt('external'); vim.wait(30); close()
 builtin.live_grep(); p = picker(); check(p:_get_prompt() == 'external', 'real Grep restores its independent query')
+clear_picker(); api.nvim_feedkeys('i', 'nx', false)
+api.nvim_paste('first line\nsecond line\nthird line', true, -1); vim.wait(100)
+check(p:_get_prompt() == 'first line second line third line', 'Grep preserves all pasted lines')
 clear_picker(); close(); builtin.live_grep(); p = picker()
 check(p:_get_prompt() == '', 'cleared Grep query stays empty after reopening'); close()
 builtin.find_files(); p = picker(); clear_picker(); close()

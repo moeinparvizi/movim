@@ -63,7 +63,13 @@ In Neo-tree, press **I** on a file/folder to hide entries with that name in the 
 
 ## Editing and language tools
 
+Selecting a word or single-line text softly highlights its exact occurrences in the same window until the selection ends. Ctrl+Click adds or removes a cursor in Normal and Insert modes; configure the terminal to pass Ctrl+Click through if it intercepts links.
+
+Mouse scrolling keeps the cursor in place while its line remains visible. Neovim moves it into view if that line scrolls off screen.
+
 Completion, diagnostics, hover, definition and rename use language servers. Install the relevant language server and project dependencies for your language. Rename depends on server support; cross-file and template changes vary by server and project. Treesitter, formatting, linting, multiple cursors and snippets are also available.
+
+Pause the mouse over a function, method or other symbol to see the language server's documentation in a small popup; moving the mouse or typing dismisses it. This requires a terminal that reports mouse movement and an attached server that supports hover. `K` and `Ctrl+Q` remain available for keyboard documentation.
 
 Angular `*.component.html` templates, HTML files under an `angular.json` project and inline `@Component` templates use a bundled Angular parser for control flow such as `@if`, bindings, calls and Material tags. The selected theme supplies the colors; completion and diagnostics still require the Angular language server and project dependencies. Parsers are bundled for Windows x64, macOS Intel/Apple Silicon and Linux x64/ARM64; unsupported architectures fall back to HTML highlighting.
 
@@ -86,6 +92,8 @@ Repository validation runs in the background so Git cannot block editor input. E
 Notifications use a restrained fade at 24 frames per second. Set `vim.g.movim_reduce_motion = true` in `user.lua` and restart to show notifications without animation. This setting does not change the terminal or personal plugins.
 
 Use `Space ut` to browse and select themes. Theme selection persists. Bookmarks and local history provide ways to return to important locations and earlier saved snapshots.
+
+The theme gallery uses a compact code sample for smaller windows. When pasting multiple lines into Find Files or Live Grep, the lines are joined with spaces so the whole text remains in the search field.
 
 ## Persian input and display
 

@@ -56,11 +56,17 @@ try {
     if (result.status !== 0) throw Error('Workspace UI integration failed: status=' + result.status + ', signal=' + result.signal);
     if (!uiOutput.includes('PASS workspace UI integration with real')) throw Error('Editor exited before UI checks completed');
     const mouse = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/mouse.lua'], {
-      cwd: root, env: { ...env, MOVIM_WORKSPACE_TEST_DIR: scratch }, encoding: 'utf8', timeout: 15000,
+      cwd: root, env: { ...env, MOVIM_WORKSPACE_TEST_DIR: scratch }, encoding: 'utf8', timeout: 45000,
     });
     process.stdout.write((mouse.stdout || '') + (mouse.stderr || ''));
     if (mouse.error) throw mouse.error;
     if (mouse.status !== 0) throw Error('Rendered mouse integration failed');
+    const hover = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/mouse-hover.lua'], {
+      cwd: root, env, encoding: 'utf8', timeout: 15000,
+    });
+    process.stdout.write((hover.stdout || '') + (hover.stderr || ''));
+    if (hover.error) throw hover.error;
+    if (hover.status !== 0) throw Error('Mouse hover integration failed');
     const panelDir = path.join(scratch, 'panels');
     fs.mkdirSync(panelDir, { recursive: true });
     const panel = spawnSync(nvim, ['--headless', '-u', 'NONE', '-l', 'tests/panel-close.lua'], {
