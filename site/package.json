@@ -1,7 +1,7 @@
 {
   "name": "movim-site",
   "private": true,
-  "version": "1.1.25",
+  "version": "1.1.26",
   "scripts": {
     "build": "node build.cjs",
     "test": "node test.cjs"
