@@ -99,6 +99,21 @@ end
 
 local function discover(root)
   local tasks, errors = {}, {}
+  if panel.services then
+    local config, err = read_json(join(root, ".movim/services.json"), false)
+    if err then errors[#errors + 1] = err end
+    if config and (type(config.services) ~= "table" or not vim.islist(config.services)) then
+      errors[#errors + 1] = "services.json must contain a services array"
+    elseif config then
+      for _, raw in ipairs(config.services) do
+        if type(raw) == "table" and type(raw.label) == "string" then
+          tasks[#tasks + 1] = { key = root .. "|service|" .. raw.label, source = "Services", label = raw.label, raw = raw }
+        else
+          errors[#errors + 1] = "Each service needs a label"
+        end
+      end
+    end
+  end
   local file = join(root, ".vscode/tasks.json")
   local config, err = read_json(file, true)
   if err then errors[#errors + 1] = err end
@@ -207,11 +222,11 @@ end
 local function refresh()
   if not valid_panel() then return end
   local tasks, errors = discover(panel.root)
-  local lines = { "  TASKS  /  " .. vim.fn.fnamemodify(panel.root, ":t"),
+  local lines = { (panel.services and "  SERVICES  /  " or "  TASKS  /  ") .. vim.fn.fnamemodify(panel.root, ":t"),
     "  Enter run   / search   o output   x stop", "  c command   e edit   r refresh   q close", "" }
   panel.rows = {}
-  for _, source in ipairs({ "VS Code", "package.json" }) do
-    lines[#lines + 1] = source == "VS Code" and ".vscode/tasks.json" or "package.json scripts"
+  for _, source in ipairs(panel.services and { "Services", "VS Code", "package.json" } or { "VS Code", "package.json" }) do
+    lines[#lines + 1] = source == "Services" and ".movim/services.json" or source == "VS Code" and ".vscode/tasks.json" or "package.json scripts"
     local count = 0
     for _, task in ipairs(tasks) do
       if task.source == source then
@@ -244,7 +259,7 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   callback = function(args)
     if not valid_panel() or not panel.root then return end
     local path = vim.fs.normalize(vim.api.nvim_buf_get_name(args.buf))
-    if path == join(panel.root, ".vscode/tasks.json") or path == join(panel.root, "package.json") then
+    if path == join(panel.root, ".vscode/tasks.json") or path == join(panel.root, "package.json") or path == join(panel.root, ".movim/services.json") then
       vim.schedule(refresh)
     end
   end,
@@ -310,11 +325,14 @@ local function run(task)
 end
 
 local function edit_tasks()
-  local path = join(panel.root, ".vscode/tasks.json")
+  local path = join(panel.root, panel.services and ".movim/services.json" or ".vscode/tasks.json")
+  if panel.services then vim.fn.mkdir(vim.fs.dirname(path), "p") end
   if panel.origin and vim.api.nvim_win_is_valid(panel.origin) then vim.api.nvim_set_current_win(panel.origin) else vim.cmd("wincmd p") end
   vim.cmd.edit(vim.fn.fnameescape(path))
   if not exists(path) and vim.api.nvim_buf_line_count(0) == 1 and vim.api.nvim_get_current_line() == "" then
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, panel.services and {
+      "{", '  "services": [', '    { "label": "Dev server", "type": "shell", "command": "npm run dev" }', "  ]", "}",
+    } or {
       "{", '  "version": "2.0.0",', '  "tasks": [', '    {',
       '      "label": "Example task",', '      "type": "shell",', '      "command": "echo Hello from movim"',
       "    }", "  ]", "}",
@@ -323,8 +341,15 @@ local function edit_tasks()
   vim.bo.filetype = "jsonc"
 end
 
-function M.toggle()
+function M.toggle(mode)
+  local services = mode == "services"
   if valid_panel() then
+    if panel.services ~= services then
+      panel.services = services
+      vim.api.nvim_set_current_win(panel.win)
+      refresh()
+      return
+    end
     local output_win = panel.output_win
     if output_win and vim.api.nvim_win_is_valid(output_win) and output_win ~= panel.win
       and vim.api.nvim_win_get_tabpage(output_win) == vim.api.nvim_win_get_tabpage(panel.win)
@@ -341,6 +366,7 @@ function M.toggle()
     return
   end
   local file = vim.api.nvim_buf_get_name(0)
+  panel.services = services
   if vim.bo.buftype ~= "" then file = "" end
   panel.file, panel.root, panel.origin = file, project_root(file), vim.api.nvim_get_current_win()
   vim.cmd("botright 12new")
@@ -383,7 +409,7 @@ function M.toggle()
       end
     end)
   end, "Run a command")
-  map("q", M.toggle, "Close tasks")
+  map("q", function() M.toggle(panel.services and "services" or nil) end, "Close panel")
   refresh()
   for row = 1, vim.api.nvim_buf_line_count(panel.buf) do
     if panel.rows[row] then vim.api.nvim_win_set_cursor(panel.win, { row, 0 }); break end

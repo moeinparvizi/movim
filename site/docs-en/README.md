@@ -2,6 +2,10 @@
 
 movim is a customizable Neovim workspace for working with code in a terminal. This guide covers installation and everyday features.
 
+**Services and databases.** Open `:Services` (Space r S) to run project services, VS Code tasks and package scripts. Enter starts the selected item, o opens output, x stops it, and e edits `.movim/services.json`. Closing the panel leaves the process running.
+
+Open `:Database` (Space r D), press a to add a connection, s to inspect its schema, or Enter to write a query. In Normal mode press F5 or Ctrl-Enter to execute; q closes the result. Connections live in `.movim/databases.json`. SQLite uses Node 22.23.5 or later with node:sqlite and runs one statement per request. PostgreSQL, MySQL, MariaDB, SQL Server, MongoDB, Redis and ODBC presets require their clients (ODBC uses isql and a DSN). Configure noninteractive authentication outside the project. Each request opens a new session. For other engines choose Custom: supply a JSON array such as `["sqlite3","local.db"]` with the executable first. The client or adapter must read the query from stdin and print results; set the optional connection field `"schema": ".tables"` to enable schema inspection for this example.
+
 ## Website and documentation languages
 
 The website opens in Persian by default. Choose **EN** for English; the preference is saved for later visits. Documentation links follow the selected language. The **فارسی** link in this guide opens the complete Persian handbook: 20 chapters and five practical references, all preserved alongside the chapter index. The Persian handbook includes the detailed tutorials rather than only this English overview.
@@ -121,7 +125,7 @@ For AI runtime upgrades, the Node.js installation must include npm on Windows, m
 
 Files are checked both when downloaded and immediately before applying, so edits made while an update is waiting are protected too. Installer upgrade checks run before copying files.
 
-Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`**. The latest stable release downloads in the background using Node.js, verifies the archive checksum and every manifest file, and is staged until you close all movim windows and reopen. Use **Space qq** to checkpoint drafts and quit. No uninstall is needed. Checks require curl; updates require Node.js and internet. Set `vim.g.movim_check_updates = false` in `user.lua` to disable daily checks. `:MovimCheckUpdate` only checks; downloads start when requested.
+Press **u** on the dashboard, **Space u U**, or run **`:MovimUpdate`** to download, verify, back up and install the latest stable editor release immediately. Reopen movim after the installed-version message to load it. No project writes or separate installer download are needed. Older updaters that display “is ready” finish installation when reopened. Checks require curl; updates require Node.js and internet. Set `vim.g.movim_check_updates = false` in `user.lua` to disable daily checks. `:MovimCheckUpdate` only checks.
 
 Updates replace only distributed configuration, features and documentation. Projects, workspace layouts, drafts, search history, exclusions, themes, AI data and API credentials are preserved. Put personal settings in **user.lua** beside init.lua: it loads after the main configuration and is never shipped or replaced. If a distributed file was edited, or a personal file conflicts with a newly shipped path, the update stops and lists the conflict. Move preferences to user.lua and restore/merge the original file before retrying. Git checkouts use Git instead of the installed-app updater.
 

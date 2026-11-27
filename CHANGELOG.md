@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.29
+
+- Install verified editor updates directly from :MovimUpdate, including on read-only projects and when GitHub rate-limits release metadata requests.
+- Manage project services and database connections from the editor, with persistent connection settings and custom database clients.
+
 ## 1.1.28
 
 - Show the active search folders above Find Files and Grep, with an overflow count and access to the complete list through Ctrl+D.

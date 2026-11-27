@@ -208,16 +208,20 @@ async function stageFiles(root, dir, files, version) {
     return { status: 'ready', version };
   } catch (error) { fs.rmSync(stage, { recursive: true, force: true }); throw error; }
 }
-async function prepare(root, release, fetch = download) {
+async function prepare(root, release, fetch = download, installNow = false) {
   root = fs.realpathSync(root);
   if (exists(path.join(root, '.git'))) throw Error('This is a source checkout. Update it with Git instead.');
   const dir = area(root);
   return lock(dir, async () => {
     if (exists(path.join(dir, 'transaction.json'))) throw Error('Restart movim to recover the previous update first.');
     const current = manifest(read(path.join(root, 'release.json'))).version;
-    if (!release) release = JSON.parse(await fetch(api, 2 * 1024 * 1024));
-    if (release.draft || release.prerelease || !newer(current, release.tag_name)) return { status: 'current', version: current };
-    const asset = n => release.assets?.find(a => a.name === n)?.browser_download_url;
+    if (!release) {
+      try { release = JSON.parse(await fetch(api, 2 * 1024 * 1024)); }
+      catch (error) { if (!/HTTP (403|429)\b/.test(error.message)) throw error; }
+    }
+    if (release && (release.draft || release.prerelease || !newer(current, release.tag_name))) return { status: 'current', version: current };
+    const asset = n => release ? release.assets?.find(a => a.name === n)?.browser_download_url
+      : 'https://github.com/moeinparvizi/movim/releases/latest/download/' + n;
     const name = asset('movim-macOS.zip') ? 'movim-macOS.zip' : 'movim-AI-macOS.zip';
     if (!asset(name) || !asset('SHA256SUMS')) throw Error('Release assets are incomplete');
     const sums = (await fetch(asset('SHA256SUMS'), 65536)).toString('utf8');
@@ -225,12 +229,14 @@ async function prepare(root, release, fetch = download) {
     if (!/^[a-f0-9]{64}$/.test(expected || '')) throw Error('Release checksum missing');
     const archive = await fetch(asset(name));
     if (digest(archive) !== expected) throw Error('Download checksum mismatch');
-    const version = release.tag_name.replace(/^v/, '');
     const contents = unzip(archive);
+    const version = release ? release.tag_name.replace(/^v/, '') : manifest(JSON.parse(contents.get('movim-macOS/config/release.json'))).version;
+    if (!newer(current, version)) return { status: 'current', version: current };
     if (exists(path.join(root, 'ai/ai-release.json')) && !contents.has('movim-macOS/config/ai/ai-release.json'))
       throw Error('Release is missing the installed AI component.');
     const files = packageFiles(contents, version, contents.has('movim-macOS/config/ai/ai-release.json'));
-    return stageFiles(root, dir, files, version);
+    const ready = await stageFiles(root, dir, files, version);
+    return installNow ? applyLocked(root, dir) : ready;
   });
 }
 async function fromPackage(root, source) {
@@ -275,7 +281,9 @@ function rollback(root, dir, journal) {
 }
 async function apply(root, hooks = {}) {
   root = fs.realpathSync(root); const dir = area(root);
-  return lock(dir, () => {
+  return lock(dir, () => applyLocked(root, dir, hooks));
+}
+function applyLocked(root, dir, hooks = {}) {
     const transaction = path.join(dir, 'transaction.json');
     if (exists(transaction)) { rollback(root, dir, read(transaction)); return { status: 'recovered' }; }
     const pending = path.join(dir, 'pending.json');
@@ -327,12 +335,11 @@ async function apply(root, hooks = {}) {
       try { fs.rmSync(stage, { recursive: true, force: true }); } catch (_) {}
       return { status: 'installed', version: info.version, backup: path.join(dir, backup) };
     } catch (error) { rollback(root, dir, journal); throw error; }
-  });
 }
 module.exports = { prepare, apply, fromPackage, installerCheck, unzip, packageFiles, preflight, newer, download, digest };
 if (require.main === module) {
   const [mode, root, source, aiSource] = process.argv.slice(2);
-  Promise.resolve().then(() => mode === 'prepare' ? prepare(root) : mode === 'apply' ? apply(root) : mode === 'local' ? fromPackage(root, source) : mode === 'check' ? installerCheck(root, source, aiSource) : Promise.reject(Error('Unknown updater mode')))
+  Promise.resolve().then(() => mode === 'install' ? prepare(root, null, download, true) : mode === 'prepare' ? prepare(root) : mode === 'apply' ? apply(root) : mode === 'local' ? fromPackage(root, source) : mode === 'check' ? installerCheck(root, source, aiSource) : Promise.reject(Error('Unknown updater mode')))
     .then(result => console.log(JSON.stringify(result))).catch(error => {
       if (mode === 'check') { try { atomic(path.join(area(root), 'install-error.txt'), error.message); } catch (_) {} }
       console.error(error.message); process.exitCode = 1;

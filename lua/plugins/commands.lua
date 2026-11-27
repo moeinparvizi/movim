@@ -30,6 +30,12 @@ return {
     -------------------------------------------------------------
     vim.keymap.set("n", "<leader>rt", function() require("utils.tasks").toggle() end, { desc = "Tasks panel" })
     vim.api.nvim_create_user_command("Tasks", function() require("utils.tasks").toggle() end, { desc = "Open project tasks" })
+    local function services() require("utils.tasks").toggle("services") end
+    local function database() require("utils.database").open() end
+    vim.api.nvim_create_user_command("Services", services, { desc = "Project services" })
+    vim.api.nvim_create_user_command("Database", database, { desc = "Database connections" })
+    vim.keymap.set("n", "<leader>rS", services, { desc = "Project services" })
+    vim.keymap.set("n", "<leader>rD", database, { desc = "Database connections" })
     vim.keymap.set("n", "<leader>rr", function() require("utils.runner").pick_script() end, { desc = "Run npm script…" })
     vim.keymap.set("n", "<leader>rd", function() require("utils.runner").run_dev() end, { desc = "Run dev server" })
     vim.keymap.set("n", "<leader>rf", function() require("utils.runner").run_file() end, { desc = "Run current file" })

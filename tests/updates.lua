@@ -42,13 +42,12 @@ local system, callback = vim.system, nil
 local saved, started = 0, 0
 package.loaded['utils.workspace'] = { ready = true, save = function(force) assert(force); saved = saved + 1; return true end }
 vim.system = function(args, opts, cb)
-  assert(args[3] == 'prepare' and args[4] == root and opts.text)
+  assert(args[3] == 'install' and args[4] == root and opts.text)
   started = started + 1; callback = cb
 end
 updater.install(); updater.install()
-assert(saved == 1 and started == 1, 'checkpoint once and prevent duplicate downloads')
-callback({ code = 0, stdout = '{"status":"ready","version":"1.1.12"}' })
-vim.wait(100, function() return notices[#notices]:find('1.1.12 is ready', 1, true) end)
-assert(notices[#notices]:find('1.1.12 is ready', 1, true))
+assert(saved == 0 and started == 1, 'project writes are not required and downloads cannot overlap')
+callback({ code = 0, stdout = '{"status":"installed","version":"1.1.12","backup":"backups/1234"}' })
+assert(vim.wait(1000, function() return notices[#notices]:find('Installed movim 1.1.12', 1, true) end))
 vim.system = system
 print('PASS Lua interactive bootstrap, headless isolation, update command/shortcut, workspace checkpoint, plugin retry and pinned lockfile')

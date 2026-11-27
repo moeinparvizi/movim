@@ -37,10 +37,7 @@ end
 
 function M.install()
   if busy then vim.notify('A movim update is already downloading.'); return end
-  if vim.fn.filereadable(root .. '/.movim-update/sync.json') == 1 then M.sync_plugins(); return end
-  local workspace = package.loaded['utils.workspace']
-  if workspace and workspace.ready and not workspace.save(true) then return end
-  local ok, args = pcall(command, 'prepare')
+  local ok, args = pcall(command, 'install')
   if not ok then vim.notify(tostring(args), vim.log.levels.ERROR); return end
   busy = true
   vim.notify('Downloading and checking the latest movim release...', vim.log.levels.INFO, { title = 'movim update' })
@@ -49,9 +46,15 @@ function M.install()
       busy = false
       if result.code ~= 0 then vim.notify('movim update stopped.\n' .. (result.stderr or ''), vim.log.levels.ERROR); return end
       local parsed, info = pcall(vim.json.decode, result.stdout or '')
-      if not parsed then vim.notify('Invalid response from movim updater.', vim.log.levels.ERROR); return end
-      if info.status == 'current' then vim.notify('movim is up to date (' .. info.version .. ').'); return end
-      vim.notify('movim ' .. info.version .. ' is ready. Close all movim windows and reopen to apply it. Your workspace will be restored.', vim.log.levels.INFO, { title = 'movim update' })
+      if not parsed or type(info) ~= 'table' then vim.notify('Invalid response from movim updater.', vim.log.levels.ERROR); return end
+      if info.status == 'current' then
+        vim.notify('Installed movim is up to date (' .. info.version .. ').')
+        M.sync_plugins()
+      elseif info.status == 'installed' then
+        vim.notify('Installed movim ' .. info.version .. '. Reopen movim to use it. Backup: ' .. info.backup, vim.log.levels.INFO, { title = 'movim update' })
+      else
+        vim.notify('movim installation did not finish: ' .. tostring(info.status), vim.log.levels.ERROR)
+      end
     end)
   end)
 end
@@ -141,7 +144,7 @@ function M.check(manual)
 end
 
 function M.setup()
-  vim.api.nvim_create_user_command('MovimUpdate', M.install, { desc = 'Download and stage the latest movim release' })
+  vim.api.nvim_create_user_command('MovimUpdate', M.install, { desc = 'Download and install the latest movim release' })
   vim.api.nvim_create_user_command('MovimCheckUpdate', function() M.check(true) end, { desc = 'Check for a movim release' })
   vim.keymap.set('n', '<leader>uU', M.install, { desc = 'Update movim' })
   if #vim.api.nvim_list_uis() > 0 then vim.defer_fn(M.sync_plugins, 1000) end

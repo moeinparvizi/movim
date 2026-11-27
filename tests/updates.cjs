@@ -49,6 +49,17 @@ function ai(values) {
   return { ...values, ...Object.fromEntries(Object.entries(entries).map(([n, b]) => ['ai/' + n, b])), 'ai/ai-release.json': json(m) };
 }
 (async () => {
+  const immediate = install('immediate', before);
+  const limited = async url => {
+    if (url.startsWith('https://api.github.com/')) throw Error('Download failed: HTTP 403');
+    assert(url.startsWith('https://github.com/moeinparvizi/movim/releases/latest/download/'));
+    return fixture.fetch(url);
+  };
+  assert.equal((await engine.prepare(immediate, null, limited, true)).status, 'installed');
+  assert.deepEqual(fs.readFileSync(path.join(immediate, 'release.json')), after['release.json']);
+  assert(!fs.existsSync(path.join(immediate, '.movim-update/pending.json')));
+  assert.equal((await engine.prepare(immediate, null, limited, true)).status, 'current');
+  console.log('PASS one-command installation and rate-limited GitHub API fallback');
   const dir = install('regular', before);
   write(path.join(dir, 'init.lua.tmp'), 'personal temporary file');
   const state = path.join(scratch, 'state/workspace.json'); write(state, '{"draft":"unsaved"}');
