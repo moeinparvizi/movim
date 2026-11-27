@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0
+
+- Start the 2.x release series for Windows, macOS and Linux. This version carries forward the editor and updater from 1.1.30 without changing user configuration.
+
 ## 1.1.30
 
 - Skip identical files during installation and rollback, including native parsers locked by a running Windows editor.
