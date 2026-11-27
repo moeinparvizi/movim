@@ -60,6 +60,24 @@ function ai(values) {
   assert(!fs.existsSync(path.join(immediate, '.movim-update/pending.json')));
   assert.equal((await engine.prepare(immediate, null, limited, true)).status, 'current');
   console.log('PASS one-command installation and rate-limited GitHub API fallback');
+  const shared = 'lua/parsers/windows-x64/angular.so';
+  const parser = fs.readFileSync(path.join(root, shared));
+  const parserRoot = install('loaded-parser', config('1.1.10', { [shared]: parser }));
+  await prepare(parserRoot, release(config('1.1.11', { [shared]: parser })));
+  const originalParser = fs.statSync(path.join(parserRoot, shared), { bigint: true });
+  const replaced = [];
+  if (process.platform === 'win32' && process.argv[2]) {
+    const child = spawnSync(process.argv[2], ['--headless','-u','NONE','-l','tests/update-loaded-parser.lua'], {
+      cwd:root, encoding:'utf8', timeout:30000, env:{...process.env, MOVIM_PARSER_FIXTURE:parserRoot,
+        MOVIM_PARSER_ENGINE:require.resolve('../lua/utils/update-engine.cjs'), MOVIM_TEST_NODE:process.execPath}
+    });
+    assert.equal(child.status,0,child.error?.message || child.stderr || child.stdout);
+  } else {
+    await engine.apply(parserRoot, {afterWrite: name => replaced.push(name)});
+  }
+  assert(!replaced.includes(shared));
+  assert.equal(fs.statSync(path.join(parserRoot, shared), {bigint:true}).ino, originalParser.ino);
+  console.log('PASS unchanged native parser is never replaced during installation');
   const dir = install('regular', before);
   write(path.join(dir, 'init.lua.tmp'), 'personal temporary file');
   const state = path.join(scratch, 'state/workspace.json'); write(state, '{"draft":"unsaved"}');

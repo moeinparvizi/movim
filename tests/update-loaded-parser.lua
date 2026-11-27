@@ -1,0 +1,6 @@
+local root = assert(vim.env.MOVIM_PARSER_FIXTURE)
+assert(vim.treesitter.language.add('angular', {path=root .. '/lua/parsers/windows-x64/angular.so'}))
+local result = vim.system({vim.env.MOVIM_TEST_NODE, vim.env.MOVIM_PARSER_ENGINE, 'apply', root}, {text=true}):wait()
+assert(result.code == 0, result.stderr)
+assert(vim.json.decode(result.stdout).status == 'installed')
+assert(vim.json.decode(table.concat(vim.fn.readfile(root .. '/release.json'))).version == '1.1.11')

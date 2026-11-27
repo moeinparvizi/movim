@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.30
+
+- Skip identical files during installation and rollback, including native parsers locked by a running Windows editor.
+
 ## 1.1.29
 
 - Install verified editor updates directly from :MovimUpdate, including on read-only projects and when GitHub rate-limits release metadata requests.

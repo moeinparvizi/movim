@@ -121,6 +121,8 @@ After applying, movim executes the new entrypoint on the same launch, including 
 
 Personal temporary files beside the configuration are preserved too: updates use unique temporary names. Invalid recovery metadata stops replacement and leaves backups available for inspection.
 
+Windows updates leave unchanged native parsers in place. When a native component itself changes, close all movim windows and reopen to install the verified download at startup. If an older updater reports a file lock after downloading, close all instances and reopen for recovery and installation.
+
 For AI runtime upgrades, the Node.js installation must include npm on Windows, macOS and Linux.
 
 Files are checked both when downloaded and immediately before applying, so edits made while an update is waiting are protected too. Installer upgrade checks run before copying files.

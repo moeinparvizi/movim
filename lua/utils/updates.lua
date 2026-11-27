@@ -52,6 +52,8 @@ function M.install()
         M.sync_plugins()
       elseif info.status == 'installed' then
         vim.notify('Installed movim ' .. info.version .. '. Reopen movim to use it. Backup: ' .. info.backup, vim.log.levels.INFO, { title = 'movim update' })
+      elseif info.status == 'ready' then
+        vim.notify('movim ' .. info.version .. ' includes a native component. Close all movim windows and reopen to finish installation.')
       else
         vim.notify('movim installation did not finish: ' .. tostring(info.status), vim.log.levels.ERROR)
       end

@@ -236,6 +236,13 @@ async function prepare(root, release, fetch = download, installNow = false) {
       throw Error('Release is missing the installed AI component.');
     const files = packageFiles(contents, version, contents.has('movim-macOS/config/ai/ai-release.json'));
     const ready = await stageFiles(root, dir, files, version);
+    if (installNow && process.platform === 'win32') {
+      for (const name of Object.keys(oldFiles(root))) {
+        if (!/\.(so|dll)$/i.test(name)) continue;
+        const file = target(root, name);
+        if (exists(file) && !files.get(name)?.equals(fs.readFileSync(file))) return ready;
+      }
+    }
     return installNow ? applyLocked(root, dir) : ready;
   });
 }
@@ -263,7 +270,12 @@ function rollback(root, dir, journal) {
   }
   for (const entry of [...journal.entries].reverse()) {
     const dest = target(root, entry.name), saved = target(path.join(dir, journal.backup), entry.name);
-    if (entry.existed) { if (exists(saved)) atomic(dest, fs.readFileSync(saved)); }
+    if (entry.existed) {
+      if (exists(saved)) {
+        const original = fs.readFileSync(saved);
+        if (!exists(dest) || !fs.readFileSync(dest).equals(original)) atomic(dest, original);
+      }
+    }
     else if (exists(dest)) fs.unlinkSync(dest);
   }
   if (journal.runtime) {
@@ -311,7 +323,11 @@ function applyLocked(root, dir, hooks = {}) {
     // Back up every affected file before publishing a write-ahead journal.
     for (const name of new Set([...Object.keys(old), ...staged.keys()])) {
       const dest = target(root, name), existed = exists(dest);
-      if (existed) atomic(target(path.join(dir, backup), name), fs.readFileSync(dest));
+      if (existed) {
+        const original = fs.readFileSync(dest);
+        if (staged.get(name)?.equals(original)) continue;
+        atomic(target(path.join(dir, backup), name), original);
+      } else if (!staged.has(name)) continue;
       journal.entries.push({ name, existed });
     }
     json(transaction, journal);
